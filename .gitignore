@@ -1,1 +1,4 @@
-./data
+### Ignore files and directories that should not be tracked by Git
+raw_data/
+.DS_store
+data/
