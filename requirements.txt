@@ -1,3 +1,5 @@
+plotly
+networkx
 shap
 XGBoost
 openpyxl
