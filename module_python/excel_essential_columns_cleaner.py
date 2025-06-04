@@ -19,15 +19,13 @@ ESSENTIAL_COLUMNS = {
     "Poutres": [
         "Id", "011EC_Lot", "012EC_Ouvrage", "013EC_Localisation", "014EC_Mode Constructif", "AI", "AS", "Hauteur totale", "Hauteur", "Sols en intersection", "Sols coupés (u)",
         "Sols coupés (Ids)", "Sols coupants (u)", "Sols coupants (Ids)", "Sol au-dessus", "Sol en-dessous", "Poteaux en intersection",
-        "Poteaux coupés (u)", "Poteaux coupés (Ids)", "Poteaux coupants (u)", "Matériau structurel",
-        "Poteaux coupants (Ids)", "Elévation à la base", "Longueur de coupe",
+        "Poteaux coupés (u)", "Poteaux coupés (Ids)", "Poteaux coupants (u)", "Matériau structurel", "Elévation à la base", "Longueur de coupe",
     ],
     "Poteaux": [
         "Id", "011EC_Lot", "012EC_Ouvrage", "013EC_Localisation", "014EC_Mode Constructif", "Nom", "AI", "AS", "Hauteur", "Longueur",
         "Partie inférieure attachée", "Partie supérieure attachée", "Sols en intersection", "Sols coupés (u)", "Sols coupés (Ids)",
         "Sols coupants (u)", "Sols coupants (Ids)", "Poutres en intersection", "Poutres coupés (u)", "Poutres coupés (Ids)", "Poutres coupants (u)",
         "Poutres coupants (Ids)", "Matériau structurel", "Marque d'emplacement du poteau", "Décalage supérieur", "Décalage inférieur",
-        "Longueur", "Sols coupés (Ids)", "Sols coupants (Ids)", "Poutres coupés (Ids)", "Poutres coupants (Ids)",
     ]
 }
 
@@ -35,7 +33,7 @@ ESSENTIAL_COLUMNS = {
 ### Data Loading and Cleaning
 ### ====================
 def load_and_clean_data(filepath):
-    """Load and clean data with robust column name handling."""
+    """Load and clean data, then return a dictionary of DataFrames."""
     dfs = {}
 
     try:
@@ -63,4 +61,16 @@ def load_and_clean_data(filepath):
         print(f"🚨 Error: {str(e)[:100]}...")
         dfs = {sheet: pd.DataFrame() for sheet in ESSENTIAL_COLUMNS.keys()}
 
-    return dfs
+    # Print cleaned DataFrame shapes
+    print("\nCleaned DataFrame Shapes:")
+    for name, df in dfs.items():
+        print(f"{name}: {df.shape}")
+
+    # Display Column Names
+    print("\nColumn Names in Cleaned DataFrames:")
+    for sheet_name, df in dfs.items():
+        print(f"\nColumns in {sheet_name}:")
+        print(df.columns)
+
+
+    return dfs  # Returning only the dictionary of cleaned DataFrames
