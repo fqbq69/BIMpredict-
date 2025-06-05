@@ -1,57 +1,66 @@
 import pandas as pd
 import numpy as np
+from IPython.display import display, HTML
 
 def clean_ids_columns(df_dict):
     """
-    Cleans ID columns across all DataFrames by filling NaN/empty values with "0"
-    if the corresponding (U) column equals 0.
-
-    Args:
-        df_dict: Dictionary of DataFrames {sheet_name: df}
-
-    Returns:
-        Updated DataFrames with cleaned ID columns.
+    Compact cleaning with side-by-side before/after comparison and final columns.
     """
-    COLUMN_PAIRS = [
-        ('Sols coupés (u)', 'Sols coupés (Ids)'),
-        ('Sols coupants (u)', 'Sols coupants (Ids)'),
-        ('Murs coupés (u)', 'Murs coupés (Ids)'),
-        ('Murs coupants (u)', 'Murs coupants (Ids)'),
-        ('Poutres coupés (u)', 'Poutres coupés (Ids)'),
-        ('Poutres coupants (u)', 'Poutres coupants (Ids)'),
-        ('Poteaux coupés (u)', 'Poteaux coupés (Ids)'),
-        ('Poteaux coupants (u)', 'Poteaux coupants (Ids)')
-    ]
+    renamed_columns = {}
+    print("🛁 Starting ID columns cleaning...\n")
 
     for sheet_name, df in df_dict.items():
         if not isinstance(df, pd.DataFrame) or df.empty:
-            print(f"⚠️ Skipping {sheet_name}: Empty or invalid DataFrame")
             continue
 
-        print(f"\n🔍 Processing {sheet_name}...")
+        u_cols = [col for col in df.columns if ("coupés_u" in col or "coupants_u" in col)]
+        if not u_cols:
+            continue
 
-        for u_col, ids_col in COLUMN_PAIRS:
-            if u_col not in df.columns or ids_col not in df.columns:
-                print(f"🚨 Skipping: {u_col} or {ids_col} not found in {sheet_name}")
-                continue  # Skip missing columns
+        print(f"📋 {sheet_name}:")
 
-            print(f"✅ Processing Column Pair: {u_col} → {ids_col}")
+        for u_col in u_cols:
+            ids_col = u_col.replace('_u', '_Ids')
+            if ids_col not in df.columns:
+                print(f" ⚠️ {u_col} → No matching IDs column")
+                continue
 
-            # Convert U column to numeric
+            # Store original values
+            original_u = df[u_col].copy()
+            original_ids = df[ids_col].copy()
+
+            # Perform cleaning
             df[u_col] = pd.to_numeric(df[u_col], errors='coerce').fillna(0).astype(int)
-
-            # Convert ID column to **consistent string type**
-            df[ids_col] = df[ids_col].astype(str)
-
-            # Explicitly replace known NaN representations with np.nan
-            df[ids_col] = df[ids_col].replace(['nan', 'na', 'none', '', ' '], np.nan)
-
-            # Ensure IDs are properly formatted when U = 0
+            df[ids_col] = df[ids_col].astype(str).replace(
+                ['nan', 'na', 'none', '', ' '], np.nan
+            )
             condition = (df[u_col] == 0) & (df[ids_col].isna())
+            df.loc[condition, ids_col] = "0"
 
-            df.loc[condition, ids_col] = "0"  # Assigning "0" as string
+            # Display comparison
+            print(f"\n 🔄 Processing: {u_col} ↔ {ids_col}")
+            comparison = pd.DataFrame({
+                'Before_u': original_u.head(3),
+                'After_u': df[u_col].head(3),
+                'Before_ids': original_ids.head(3),
+                'After_ids': df[ids_col].head(3)
+            })
+            display(comparison)
 
-            cleaned_count = condition.sum()
-            print(f"✅ Cleaned {cleaned_count} rows in {ids_col}")
+            # Rename column
+            new_name = f"{ids_col}_cleaned"
+            df.rename(columns={ids_col: new_name}, inplace=True)
+            renamed_columns[ids_col] = new_name
+            print(f" ✨ Renamed to: {new_name}")
+            print("─" * 50)
 
-    return df_dict
+    # Show final columns
+    print("\n✅ FINAL COLUMNS PER DATAFRAME:")
+    for sheet_name, df in df_dict.items():
+        if isinstance(df, pd.DataFrame) and not df.empty:
+            print(f"\n📌 {sheet_name} columns:")
+            cols = [f"{col} {'(renamed)' if col in renamed_columns.values() else ''}"
+                   for col in df.columns]
+            print("\n".join(f" • {col}" for col in cols))
+
+    return df_dict, renamed_columns

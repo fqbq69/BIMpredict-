@@ -1,8 +1,8 @@
 import pandas as pd
 
-### ====================
+### ===============================================
 ### Define essential columns for each DataFrame
-### ====================
+### ===============================================
 ESSENTIAL_COLUMNS = {
     "Murs": [
         "Id", "011EC_Lot", "012EC_Ouvrage", "013EC_Localisation", "014EC_Mode Constructif", "Hauteur", "Epaisseur", "AI", "AS", "Sols en intersection", "Sols coupés (u)", "Sols coupés (Ids)",
@@ -28,49 +28,60 @@ ESSENTIAL_COLUMNS = {
         "Poutres coupants (Ids)", "Matériau structurel", "Marque d'emplacement du poteau", "Décalage supérieur", "Décalage inférieur",
     ]
 }
+### ========================================
+### Prefix mapping for different DataFrames
+### ========================================
+PREFIXES = {
+    "Murs": "Mur_",
+    "Sols": "Sol_",
+    "Poutres": "Poutre_",
+    "Poteaux": "Poteau_",
+}
 
-### ====================
-### Data Loading and Cleaning
-### ====================
-def load_and_clean_data(filepath):
-    """Load and clean data, then return a dictionary of DataFrames."""
+### ============================================================================
+### Function to sanitize column names by removing spaces and special characters
+### ============================================================================
+def sanitize_column_name(col_name):
+    """Remove spaces and special characters from column names."""
+    return col_name.strip().replace(" ", "_").replace("(", "").replace(")", "")
+
+
+### ============================================================================
+### Function to load and choose essential columns from columns in Excel sheets
+### ============================================================================
+def load_and_sanitize_data(filepath):
+    """
+    Load, clean, and sanitize all DataFrames from Excel file.
+    Returns dictionary of fully sanitized DataFrames.
+    """
     dfs = {}
 
     try:
+        print("📂 Loading and sanitizing Excel file...")
         xls = pd.ExcelFile(filepath)
-        available_sheets = xls.sheet_names
 
         for sheet, keep_cols in ESSENTIAL_COLUMNS.items():
-            if sheet in available_sheets:
+            if sheet in xls.sheet_names:
+                # Load original data
                 df = pd.read_excel(filepath, sheet_name=sheet)
-                df.columns = df.columns.str.strip().str.replace('\s+', ' ', regex=True)
 
-                existing_cols = [col for col in keep_cols if col in df.columns]
-                missing_cols = set(keep_cols) - set(existing_cols)
+                # Clean and sanitize column names
+                sanitized_cols = {col: sanitize_column_name(col) for col in df.columns if col in keep_cols}
+                prefix = PREFIXES.get(sheet, "")
+                renamed_cols = {col: prefix + sanitized_cols[col] for col in sanitized_cols}
 
-                if missing_cols:
-                    print(f"⚠️ {sheet}: Missing {len(missing_cols)} columns: {list(missing_cols)[:3]}{'...' if len(missing_cols) > 3 else ''}")
+                # Create sanitized DataFrame
+                dfs[sheet] = df[list(sanitized_cols.keys())].rename(columns=renamed_cols)
 
-                dfs[sheet] = df[existing_cols]
-                print(f"✅ {sheet}: Kept {len(existing_cols)}/{len(keep_cols)} columns | New shape: {dfs[sheet].shape}")
-            else:
-                print(f"⚠️ Sheet '{sheet}' not found")
-                dfs[sheet] = pd.DataFrame()
+                # Also sanitize the data values in ID columns
+                for col in dfs[sheet].columns:
+                    if col.endswith('_Id') or col.endswith('_Ids'):
+                        dfs[sheet][col] = dfs[sheet][col].astype(str).str.strip()
+
+                print(f"✅ {sheet}: Sanitized {len(renamed_cols)} columns")
 
     except Exception as e:
-        print(f"🚨 Error: {str(e)[:100]}...")
-        dfs = {sheet: pd.DataFrame() for sheet in ESSENTIAL_COLUMNS.keys()}
+        print(f"🚨 Error: {str(e)}")
+        return {sheet: pd.DataFrame() for sheet in ESSENTIAL_COLUMNS.keys()}
 
-    # Print cleaned DataFrame shapes
-    print("\nCleaned DataFrame Shapes:")
-    for name, df in dfs.items():
-        print(f"{name}: {df.shape}")
-
-    # Display Column Names
-    print("\nColumn Names in Cleaned DataFrames:")
-    for sheet_name, df in dfs.items():
-        print(f"\nColumns in {sheet_name}:")
-        print(df.columns)
-
-
-    return dfs  # Returning only the dictionary of cleaned DataFrames
+    return dfs
