@@ -20,7 +20,6 @@ def preprocess_features(X: pd.DataFrame) -> np.ndarray:
         Stateless operation: "fit_transform()" equals "transform()".
         """
 
-
     print("✅ X_processed, with shape", X_processed.shape)
 
     pass #return X_processed data
