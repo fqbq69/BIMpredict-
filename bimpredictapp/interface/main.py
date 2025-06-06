@@ -1,19 +1,37 @@
 import numpy as np
 import pandas as pd
+from colorama import Fore, Style
 
 from pathlib import Path
-from colorama import Fore, Style
-from dateutil.parser import parse
 
-from bmipredictapp.params import *
-from bmipredictapp.ml_logic.data import get_data_with_cache, clean_data, load_data_to_bq
-from bmipredictapp.ml_logic.model import initialize_model, compile_model, train_model, evaluate_model
-from bmipredictapp.ml_logic.preprocessor import preprocess_features
-from bmipredictapp.ml_logic.registry import load_model, save_model, save_results
-from bmipredictapp.ml_logic.registry import mlflow_run, mlflow_transition_model
+from bimpredictapp.params import *
+from bimpredictapp.ml_logic.load import load_data
+from bimpredictapp.ml_logic.data import clean_ids_columns, drop_zero_values_columns
+from bimpredictapp.ml_logic.data import count_ids_per_row, verify_missing_values_with_missingno
 
 import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+
 import tensorflow as tf
+
+def import_excel_files() -> None:
+    """
+    importing excelfiles derectly from the directory  defined in the env variables
+    """
+    df_dict = load_data(maquettes_path = MAQ_TO_TEST, sheets=['Murs', 'Sols', 'Poutres', 'Poteaux'])
+
+    df_dict, renamed_columns = clean_ids_columns(df_dict)
+
+    updated_df_dict, results_dict, dropped_columns_report = drop_zero_values_columns(df_dict)
+
+    df_dict, renamed_columns = count_ids_per_row(updated_df_dict)
+
+    results_dict = verify_missing_values_with_missingno(df_dict)
+
+    print("✅ Loading the maquette done \n")
+
+
+    pass
 
 
 def preprocess() -> None:
@@ -27,16 +45,9 @@ def preprocess() -> None:
 
     print(Fore.MAGENTA + "\n ⭐️ Use case: preprocess" + Style.RESET_ALL)
 
-    # Retrieve data `
-
-    # Process data
-
-    # Load a DataFrame onto BigQuery containing [pickup_datetime, X_processed, y]
-
-
     print("✅ preprocess() done \n")
+    pass
 
-@mlflow_run
 def train(
         split_ratio: float = 0.02, # 0.02 represents ~ 1 month of validation data on a 2009-2015 train set
         learning_rate=0.0005,
@@ -75,7 +86,6 @@ def train(
     pass #return the score here
 
 
-@mlflow_run
 def evaluate(stage: str = "Production"
     ) -> float:
     """
@@ -89,7 +99,6 @@ def evaluate(stage: str = "Production"
     print("✅ evaluate() done \n")
 
     pass #returning eval values
-
 
 def pred(X_pred: pd.DataFrame = None) -> np.ndarray:
     """
@@ -105,7 +114,9 @@ def pred(X_pred: pd.DataFrame = None) -> np.ndarray:
 
 
 if __name__ == '__main__':
+    import_excel_files()
     #preprocess()
     #train()
     #evaluate()
-    pred()
+    #pred()
+    pass

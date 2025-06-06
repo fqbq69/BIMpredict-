@@ -1,12 +1,8 @@
 import numpy as np
-import time
-
-from colorama import Fore, Style
-from typing import Tuple
 
 # Timing the TF import
-print(Fore.BLUE + "\nLoading TensorFlow..." + Style.RESET_ALL)
-start = time.perf_counter()
+#print(Fore.BLUE + "\nLoading TensorFlow..." + Style.RESET_ALL)
+#start = time.perf_counter()
 
 from tensorflow import keras
 from keras import Model, Sequential, layers, regularizers, optimizers
