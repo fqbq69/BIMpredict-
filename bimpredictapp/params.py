@@ -4,6 +4,7 @@ import numpy as np
 ##################  VARIABLES  ##################
 DATA_PATH = "raw_data/excel"
 
+MAQ_TO_TEST = 'raw_data/excel/RawData - 21003_Paramétrage ICF_18-01-22.xlsx'
 
 ### ===============================================
 ### Define essential columns for each DataFrame

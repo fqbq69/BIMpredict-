@@ -9,7 +9,7 @@ import tensorflow as tf
 from bimpredictapp.params import *
 from bimpredictapp.ml_logic.load import load_data
 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '4'
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
 
 def import_excel_files() -> None:
     """
