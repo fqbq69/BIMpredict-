@@ -6,6 +6,8 @@ from pathlib import Path
 
 from bimpredictapp.params import *
 from bimpredictapp.ml_logic.load import load_data
+from bimpredictapp.ml_logic.data import clean_ids_columns, drop_zero_values_columns
+from bimpredictapp.ml_logic.data import count_ids_per_row, verify_missing_values_with_missingno
 
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -18,10 +20,16 @@ def import_excel_files() -> None:
     """
     df_dict = load_data(maquettes_path = MAQ_TO_TEST, sheets=['Murs', 'Sols', 'Poutres', 'Poteaux'])
 
+    df_dict, renamed_columns = clean_ids_columns(df_dict)
+
+    updated_df_dict, results_dict, dropped_columns_report = drop_zero_values_columns(df_dict)
+
+    df_dict, renamed_columns = count_ids_per_row(updated_df_dict)
+
+    results_dict = verify_missing_values_with_missingno(df_dict)
+
     print("✅ Loading the maquette done \n")
 
-    #cleaning
-    
 
     pass
 
