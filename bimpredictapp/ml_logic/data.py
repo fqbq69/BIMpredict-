@@ -1,13 +1,13 @@
 import pandas as pd
 import numpy as np
 import os
-
+from bimpredictapp.params import *
 
 from IPython.display import display, HTML
 import missingno as msno
 import matplotlib.pyplot as plt
 
-def clean_ids_columns(df_dict):
+def clean_ids_columns(df_dict) -> tuple:
     """
     Compact cleaning with side-by-side before/after comparison and final columns.
     """
@@ -70,7 +70,7 @@ def clean_ids_columns(df_dict):
 
     return df_dict, renamed_columns
 
-def drop_zero_values_columns(df_dict):
+def drop_zero_values_columns(df_dict) -> tuple:
     """
     Verifies missing values, drops columns with 100% missing values,
     and shows only relevant columns for each DataFrame.
@@ -150,7 +150,7 @@ def drop_zero_values_columns(df_dict):
 
     return updated_df_dict, results_dict, dropped_columns_report
 
-def count_ids_per_row(df_dict):
+def count_ids_per_row(df_dict) -> tuple:
     """
     Dynamically searches for columns ending with `_coupants_Ids_cleaned` or `_coupés_Ids_cleaned`
     across multiple DataFrames, then counts comma-separated IDs.
@@ -181,6 +181,66 @@ def count_ids_per_row(df_dict):
             print(f"✅ Found & Processed: {new_col}, Added Count Column: {new_col}_count")
 
     return df_dict, renamed_columns
+
+def verify_missing_values_with_missingno(df_dict):
+    """
+    Verifies missing values for relevant columns in each DataFrame using `missingno`.
+    Shows only the columns that belong to each specific DataFrame.
+
+    Args:
+        df_dict (dict): Dictionary containing DataFrames.
+
+    Returns:
+        Dictionary with summary results for each DataFrame.
+    """
+    results_dict = {}
+
+    # Define the prefix mapping for each DataFrame
+    prefix_mapping = {
+        "Murs": "Mur_",
+        "Sols": "Sol_",
+        "Poutres": "Poutre_",
+        "Poteaux": "Poteau_"
+    }
+
+    for df_name, df in df_dict.items():
+        print(f"\n{'='*50}")
+        print(f"🔍 ANALYZING: {df_name.upper()}")
+        print(f"{'='*50}")
+
+        # Get the prefix for this DataFrame
+        prefix = prefix_mapping.get(df_name, "")
+
+        # Find all columns that start with this prefix
+        relevant_cols = [col for col in df.columns if col.startswith(prefix)]
+
+        if not relevant_cols:
+            print(f"⚠️ No relevant columns found for {df_name}")
+            continue
+
+        # Create summary for only relevant columns
+        summary_df = pd.DataFrame({
+            "Column": relevant_cols,
+            "Missing Count": df[relevant_cols].isna().sum(),
+            "Missing %": (df[relevant_cols].isna().mean() * 100).round(2)
+        })
+
+        results_dict[df_name] = summary_df
+
+        # Display summary
+        print(f"\n📊 Missing Value Summary for {df_name}:")
+        display(summary_df.style.format({"Missing %": "{:.2f}%"}))
+
+        # Generate missingno plot for relevant columns only
+        plt.figure(figsize=(15, 7))
+        msno.bar(df[relevant_cols], figsize=(15, 7), color="dodgerblue", fontsize=12)
+        plt.title(f"Missing Data Pattern - {df_name}", pad=20, fontsize=14)
+        plt.ylabel("Column", labelpad=15)
+        plt.xlabel("Data Completeness", labelpad=15)
+        plt.tight_layout()
+        plt.show()
+
+    return results_dict
 
 
 ### ============================================================================

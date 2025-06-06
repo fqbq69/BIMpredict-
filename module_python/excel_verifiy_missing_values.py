@@ -3,7 +3,7 @@ import missingno as msno
 import matplotlib.pyplot as plt
 from IPython.display import display
 
-def verify_missing_values_with_missingno(df_dict):
+def verify_missing_values_with_missingno(df_dict) -> dict:
     """
     Verifies missing values for relevant columns in each DataFrame using `missingno`.
     Shows only the columns that belong to each specific DataFrame.
