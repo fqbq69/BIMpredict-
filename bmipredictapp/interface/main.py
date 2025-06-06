@@ -1,16 +1,6 @@
 import numpy as np
 import pandas as pd
-
 from pathlib import Path
-from colorama import Fore, Style
-from dateutil.parser import parse
-
-from bmipredictapp.params import *
-from bmipredictapp.ml_logic.data import get_data_with_cache, clean_data, load_data_to_bq
-from bmipredictapp.ml_logic.model import initialize_model, compile_model, train_model, evaluate_model
-from bmipredictapp.ml_logic.preprocessor import preprocess_features
-from bmipredictapp.ml_logic.registry import load_model, save_model, save_results
-from bmipredictapp.ml_logic.registry import mlflow_run, mlflow_transition_model
 
 import os
 import tensorflow as tf
@@ -108,4 +98,5 @@ if __name__ == '__main__':
     #preprocess()
     #train()
     #evaluate()
-    pred()
+    #pred()
+    pass
