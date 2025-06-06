@@ -3,13 +3,14 @@ import pandas as pd
 from colorama import Fore, Style
 
 from pathlib import Path
-import os
-import tensorflow as tf
 
 from bimpredictapp.params import *
 from bimpredictapp.ml_logic.load import load_data
 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+
+import tensorflow as tf
 
 def import_excel_files() -> None:
     """
@@ -20,9 +21,9 @@ def import_excel_files() -> None:
     print("✅ Loading the maquette done \n")
 
     #cleaning
+    
 
     pass
-
 
 
 def preprocess() -> None:
