@@ -1,18 +1,25 @@
 import numpy as np
 import pandas as pd
-from pathlib import Path
 from colorama import Fore, Style
 
+from pathlib import Path
 import os
 import tensorflow as tf
 
+from bimpredictapp.params import *
+from bimpredictapp.ml_logic.load import load_data
+
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '4'
 
 def import_excel_files() -> None:
     """
     importing excelfiles derectly from the directory  defined in the env variables
     """
+    df_dict = load_data(maquettes_path = MAQ_TO_TEST, sheets=['Murs', 'Sols', 'Poutres', 'Poteaux'])
 
+    print("✅ Loading the maquette done \n")
 
+    #cleaning
 
     pass
 
