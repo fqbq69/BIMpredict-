@@ -242,14 +242,12 @@ def verify_missing_values_with_missingno(df_dict):
 
     return results_dict
 
-
 ### ============================================================================
 ### Function to sanitize column names by removing spaces and special characters
 ### ============================================================================
 def sanitize_column_name(col_name):
     """Remove spaces and special characters from column names."""
     return col_name.strip().replace(" ", "_").replace("(", "").replace(")", "")
-
 
 ### ============================================================================
 ### Function to load and choose essential columns from columns in Excel sheets
