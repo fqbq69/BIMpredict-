@@ -2,12 +2,12 @@ import pandas as pd
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from os.path import dirname, abspath, join
 
-#import verification module
-from bimpredictapp.api.verify import get_sheets
+dirname = dirname(dirname(abspath(__file__)))
 
-#imort the prediction module
-from bimpredictapp.interface.main import pred
+#import the prediction module
+#from bimpredictapp.interface.main import pred
 
 app = FastAPI()
 
@@ -20,30 +20,33 @@ app.add_middleware(
     allow_headers=["*"],  # Allows all headers
 )
 
-#Example : http://127.0.0.1:8000/predict?file=someurl&sheets=someparams
-@app.get("/predict")
-def predict(
+#Example : http://127.0.0.1:8000/bimpred?file=someurl
+@app.get("/bimpred")
+def bimpred(
         file: str,  # the url of the excel file
-        sheets: dict,
     ):
     """
-    Load the url and the sheets names into the api to connect with the load function in main module.
+    Call api by file= the url / or path for now ..
 
     """
-    #import excel file: load file to a url file host
-
     #verify sheets
-    sheets = get_sheets(file)
+    #file to test 'RawData - 25NBES1-8010-PRO-BIM-ASPC-MGO-00A-TN-002-0-25nBES1_8010_PRO_STR_ASPC_MAQ_00A_0.xlsx'
+    file_name = file
+    file_url = join(dirname, 'data/raw/', file_name)
 
-    for sheet in sheets:
-        if sheet in ['Murs', 'Sols', 'Poutres', 'Poteaux']:
-            results = pred(file)
-            return results
+    #sheets to check = ['murs', 'sols', 'poutres', 'poteaux']
 
-        else:
-            return 'Sheets Are not OK! Please check your file'
+    try:
+        file = pd.ExcelFile(file_url)
+        sheet_names =  file.sheet_names
 
-    #predict will return a url to download the predicted excel file
+        for sheet in sheet_names:
+            if sheet.lower() in ['murs', 'sols', 'poutres', 'poteaux']:
+                results = 'predicted ' #pred(file)
+                return str(sheet_names)
+
+    except Exception as e:
+        return f"Error loading sheets from file: {e}"
 
 @app.get("/")
 def root():
