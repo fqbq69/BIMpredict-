@@ -2,63 +2,73 @@ import pandas as pd
 import missingno as msno
 import matplotlib.pyplot as plt
 from IPython.display import display
+try:
+    from excel_merge_dfs import merged_dfs_dict
+except ImportError:
+    print("❌ Error: Unable to import 'excel_merge_dfs'. Ensure the module is in the correct directory.")
+    merged_dfs_dict = {}
 
-def verify_missing_values_with_missingno(df_dict) -> dict:
+def verify_missing_values_merged(maquette_name):
     """
-    Verifies missing values for relevant columns in each DataFrame using `missingno`.
-    Shows only the columns that belong to each specific DataFrame.
-
-    Args:
-        df_dict (dict): Dictionary containing DataFrames.
-
-    Returns:
-        Dictionary with summary results for each DataFrame.
+    Verifies missing values in the dynamically named merged DataFrame.
     """
-    results_dict = {}
+    merged_variable_name = f"{maquette_name}_merged_v1"
 
-    # Define the prefix mapping for each DataFrame
-    prefix_mapping = {
-        "Murs": "Mur_",
-        "Sols": "Sol_",
-        "Poutres": "Poutre_",
-        "Poteaux": "Poteau_"
-    }
+    # Debugging step: Print available keys
+    print(f"🔍 Looking for '{merged_variable_name}' in merged_dfs_dict")
+    print(f"Available merged DataFrames: {merged_dfs_dict.keys()}")
 
-    for df_name, df in df_dict.items():
-        print(f"\n{'='*50}")
-        print(f"🔍 ANALYZING: {df_name.upper()}")
-        print(f"{'='*50}")
+    if merged_variable_name not in merged_dfs_dict:
+        print(f"❌ Error: Merged DataFrame '{merged_variable_name}' not found in merged_dfs_dict.")
+        return None
 
-        # Get the prefix for this DataFrame
-        prefix = prefix_mapping.get(df_name, "")
+    merged_df = merged_dfs_dict[merged_variable_name]
 
-        # Find all columns that start with this prefix
-        relevant_cols = [col for col in df.columns if col.startswith(prefix)]
+    return merged_df
 
-        if not relevant_cols:
-            print(f"⚠️ No relevant columns found for {df_name}")
-            continue
+def missing_values_table(maquette_name):
+    """
+    Generates a structured table showing column names, total rows, missing values, and percentage of missing values.
+    """
+    merged_variable_name = f"{maquette_name}_merged_v1"
 
-        # Create summary for only relevant columns
-        summary_df = pd.DataFrame({
-            "Column": relevant_cols,
-            "Missing Count": df[relevant_cols].isna().sum(),
-            "Missing %": (df[relevant_cols].isna().mean() * 100).round(2)
-        })
+    if merged_variable_name not in merged_dfs_dict:
+        print(f"❌ Error: Merged DataFrame '{merged_variable_name}' not found in merged_dfs_dict.")
+        return None
 
-        results_dict[df_name] = summary_df
+    merged_df = merged_dfs_dict[merged_variable_name]
 
-        # Display summary
-        print(f"\n📊 Missing Value Summary for {df_name}:")
-        display(summary_df.style.format({"Missing %": "{:.2f}%"}))
+    # Create structured summary table
+    missing_summary = pd.DataFrame({
+        "Column Name": merged_df.columns,
+        "Total Rows": [merged_df.shape[0]] * len(merged_df.columns),
+        "Missing Values": merged_df.isna().sum().values,
+        "Percentage Missing": (merged_df.isna().mean() * 100).round(2).values
+    })
 
-        # Generate missingno plot for relevant columns only
-        plt.figure(figsize=(15, 7))
-        msno.bar(df[relevant_cols], figsize=(15, 7), color="dodgerblue", fontsize=12)
-        plt.title(f"Missing Data Pattern - {df_name}", pad=20, fontsize=14)
-        plt.ylabel("Column", labelpad=15)
-        plt.xlabel("Data Completeness", labelpad=15)
-        plt.tight_layout()
-        plt.show()
+    # Display the formatted table
+    display(missing_summary)
 
-    return results_dict
+    return missing_summary
+
+
+def plot_missing_values(maquette_name):
+    """
+    Plots the missing values in the merged DataFrame.
+    """
+    merged_variable_name = f"{maquette_name}_merged_v1"
+
+    if merged_variable_name not in merged_dfs_dict:
+        print(f"❌ Error: Merged DataFrame '{merged_variable_name}' not found in merged_dfs_dict.")
+        return None
+
+    merged_df = merged_dfs_dict[merged_variable_name]
+
+    # Generate missingno plot
+    plt.figure(figsize=(12, 6))
+    msno.bar(merged_df, figsize=(12, 6), color="dodgerblue", fontsize=12)
+    plt.title(f"Missing Data Pattern - {merged_variable_name}", pad=20, fontsize=14)
+    plt.ylabel("Column", labelpad=15)
+    plt.xlabel("Data Completeness", labelpad=15)
+    plt.tight_layout()
+    plt.show()
