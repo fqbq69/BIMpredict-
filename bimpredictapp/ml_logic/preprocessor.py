@@ -8,8 +8,7 @@ from sklearn.compose import ColumnTransformer, make_column_transformer
 from sklearn.preprocessing import OneHotEncoder, FunctionTransformer
 
 #fix missing modules to import
-from bmipredictapp.ml_logic.encoders import transform_time_features, transform_lonlat_features, compute_geohash
-
+from bmipredictapp.ml_logic.encoders import *
 
 def preprocess_features(X: pd.DataFrame) -> np.ndarray:
     def create_sklearn_preprocessor() -> ColumnTransformer:
@@ -19,6 +18,8 @@ def preprocess_features(X: pd.DataFrame) -> np.ndarray:
 
         Stateless operation: "fit_transform()" equals "transform()".
         """
+
+    
 
     print("✅ X_processed, with shape", X_processed.shape)
 

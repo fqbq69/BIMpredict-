@@ -2,9 +2,9 @@ import os
 import numpy as np
 
 ##################  VARIABLES  ##################
-DATA_PATH = "raw_data/excel"
-MAQ_TO_TEST = 'raw_data/excel/RawData - 21003_Paramétrage ICF_18-01-22.xlsx'
-
+EXCEL_FILES_PATH = "raw_data/excel"
+A_FILE_TO_TEST = 'raw_data/excel/RawData - 21003_Paramétrage ICF_18-01-22.xlsx'
+TF_CPP_MIN_LOG_LEVEL = 3
 
 
 ### ===============================================

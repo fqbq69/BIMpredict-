@@ -1,38 +1,33 @@
 import numpy as np
 import pandas as pd
 from colorama import Fore, Style
-
+import os
 from pathlib import Path
 
 from bimpredictapp.params import *
-from bimpredictapp.ml_logic.load import load_data
+from bimpredictapp.ml_logic.load import load_excel_files
 from bimpredictapp.ml_logic.data import clean_ids_columns, drop_zero_values_columns
 from bimpredictapp.ml_logic.data import count_ids_per_row, verify_missing_values_with_missingno
 
-import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+#import tensorflow as tf
 
-import tensorflow as tf
+from os import listdir
+from os.path import isfile, join
+
+def load_all_files():
+    all_files = [f for f in listdir(EXCEL_FILES_PATH) if isfile(join(EXCEL_FILES_PATH, f))]
+    return all_files
 
 def import_excel_files() -> None:
     """
-    importing excelfiles derectly from the directory  defined in the env variables
+    Loading excel files from the directory defined in the env variables
+
     """
-    df_dict = load_data(maquettes_path = MAQ_TO_TEST, sheets=['Murs', 'Sols', 'Poutres', 'Poteaux'])
-
-    df_dict, renamed_columns = clean_ids_columns(df_dict)
-
-    updated_df_dict, results_dict, dropped_columns_report = drop_zero_values_columns(df_dict)
-
-    df_dict, renamed_columns = count_ids_per_row(updated_df_dict)
-
-    results_dict = verify_missing_values_with_missingno(df_dict)
+    df_dict = load_excel_files(maquettes_path = A_FILE_TO_TEST, sheets=['Murs', 'Sols', 'Poutres', 'Poteaux'])
 
     print("✅ Loading the maquette done \n")
 
-
     pass
-
 
 def preprocess() -> None:
     """
@@ -85,7 +80,6 @@ def train(
 
     pass #return the score here
 
-
 def evaluate(stage: str = "Production"
     ) -> float:
     """
@@ -114,7 +108,8 @@ def pred(X_pred: pd.DataFrame = None) -> np.ndarray:
 
 
 if __name__ == '__main__':
-    import_excel_files()
+    load_all_files()
+    #import_excel_files()
     #preprocess()
     #train()
     #evaluate()
