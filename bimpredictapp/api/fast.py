@@ -3,11 +3,13 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from os.path import dirname, abspath, join
+from fastapi import UploadFile, File
+import shutil
 
 dirname = dirname(dirname(abspath(__file__)))
 
 #import the prediction module
-#from bimpredictapp.interface.main import pred
+from bimpredictapp.interface.main import pred
 
 app = FastAPI()
 
@@ -20,22 +22,20 @@ app.add_middleware(
     allow_headers=["*"],  # Allows all headers
 )
 
-#Example : http://127.0.0.1:8000/bimpred?file=someurl
+
 @app.get("/bimpred")
 def bimpred(
-        file: str,  # the url of the excel file
+        file: str,  #Example : http://127.0.0.1:8000/bimpred?file=file01.xlsx
     ):
     """
-    Call api by file= the url / or path for now ..
+    Call api by file= filename
+    the file should exist in the data/raw folder
 
     """
     #verify sheets
-    #file to test 'RawData - 25NBES1-8010-PRO-BIM-ASPC-MGO-00A-TN-002-0-25nBES1_8010_PRO_STR_ASPC_MAQ_00A_0.xlsx'
-    file_name = file
-    file_url = join(dirname, 'data/raw/', file_name)
+    file_url = join(dirname, 'data/raw/', file)
 
     #sheets to check = ['murs', 'sols', 'poutres', 'poteaux']
-
     try:
         file = pd.ExcelFile(file_url)
         sheet_names =  file.sheet_names
@@ -43,13 +43,31 @@ def bimpred(
         for sheet in sheet_names:
             if sheet.lower() in ['murs', 'sols', 'poutres', 'poteaux']:
                 results = 'predicted ' #pred(file)
-                return str(sheet_names)
+                return {
+                        'API respons': 'URL to predicted the excel file'
+                }
+            else:
+                return {
+                        'API respons': f'{sheet} is not an expected sheet name!'
+                }
 
     except Exception as e:
         return f"Error loading sheets from file: {e}"
 
+@app.post("/upload_excel")
+async def upload_excel(file: UploadFile = File(...)):
+    """
+    Uploads an Excel file and saves it to /data/raw directory.
+    """
+    # Usage Example: curl -F "file=@/home/samer/code/test_file.xlsx " http://127.0.0.1:8004/upload_excel
+
+    save_path = join(dirname, 'data/raw', file.filename)
+    with open(save_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    return {"filename": file.filename, "status": "saved"}
+
 @app.get("/")
 def root():
     return {
-    'greeting': 'Hello'
+    'API': 'please read the full documentation'
     }
