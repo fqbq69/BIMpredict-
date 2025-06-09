@@ -101,10 +101,13 @@ def pred(X_pred: pd.DataFrame = None) -> np.ndarray:
 
     print("\n⭐️ Use case: predict")
 
-    #code here
+    #load sheets as dataframes
+
+    #predict results
 
     print("\n✅ prediction done: ", y_pred, y_pred.shape, "\n")
-    pass #treturn the predicted values
+
+    return  'prediction results'
 
 
 if __name__ == '__main__':

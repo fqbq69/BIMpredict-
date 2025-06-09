@@ -4,11 +4,10 @@ from fastapi.middleware.cors import CORSMiddleware
 
 
 #import verification module
-from bimpredictapp.api.verify import
+from bimpredictapp.api.verify import get_sheets
 
 #imort the prediction module
 from bimpredictapp.interface.main import pred
-
 
 app = FastAPI()
 
@@ -21,7 +20,7 @@ app.add_middleware(
     allow_headers=["*"],  # Allows all headers
 )
 
-# http://127.0.0.1:8000/predict?file=someurl&sheets=someparams
+#Example : http://127.0.0.1:8000/predict?file=someurl&sheets=someparams
 @app.get("/predict")
 def predict(
         file: str,  # the url of the excel file
@@ -33,16 +32,18 @@ def predict(
     """
     #import excel file: load file to a url file host
 
-
     #verify sheets
+    sheets = get_sheets(file)
 
+    for sheet in sheets:
+        if sheet in ['Murs', 'Sols', 'Poutres', 'Poteaux']:
+            results = pred(file)
+            return results
 
+        else:
+            return 'Sheets Are not OK! Please check your file'
 
     #predict will return a url to download the predicted excel file
-    results = pred(file, sheets)
-
-    return results
-
 
 @app.get("/")
 def root():
