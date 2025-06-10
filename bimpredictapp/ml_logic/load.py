@@ -8,13 +8,9 @@ import os
 import tensorflow as tf
 
 
-# Display column names
-for sheet_name, df in data.items():
-    print(f"\n{sheet_name} DataFrame Preview:")
-    print(df.columns)
 
 
-def load_excel_files(excel_file_path, sheets=['Murs', 'Sols', 'Poutres', 'Poteaux']) -> dict:
+def load_excel(excel_file_path, sheets=['Murs', 'Sols', 'Poutres', 'Poteaux']) -> dict:
     """
     Load data from an Excel file and return a dictionary of DataFrames.
 
