@@ -5,11 +5,12 @@ import os
 from pathlib import Path
 
 from bimpredictapp.params import *
-from bimpredictapp.ml_logic.load import load_excel_files
+from bimpredictapp.ml_logic.load import load_excel
 from bimpredictapp.ml_logic.data import clean_ids_columns, drop_zero_values_columns
 from bimpredictapp.ml_logic.data import count_ids_per_row, verify_missing_values_with_missingno
 
-#import tensorflow as tf
+import tensorflow as tf
+from tensorflow import keras
 
 from os import listdir
 from os.path import isfile, join
@@ -23,7 +24,7 @@ def import_excel_files() -> None:
     Loading excel files from the directory defined in the env variables
 
     """
-    df_dict = load_excel_files(maquettes_path = A_FILE_TO_TEST, sheets=['Murs', 'Sols', 'Poutres', 'Poteaux'])
+    df_dict = load_excel(maquettes_path = A_FILE_TO_TEST, sheets=['Murs', 'Sols', 'Poutres', 'Poteaux'])
 
     print("✅ Loading the maquette done \n")
 
@@ -94,21 +95,53 @@ def evaluate(stage: str = "Production"
 
     pass #returning eval values
 
-def pred(X_pred: pd.DataFrame = None) -> np.ndarray:
+def pred(file: str) -> str:
     """
     Make a prediction using the latest trained model
     """
 
-    print("\n⭐️ Use case: predict")
+    #print("\n⭐️ Use case: predict")
 
-    #code here
+    #load new sheets as dataframes
+    df_dict = load_excel(maquettes_path = A_FILE_TO_TEST, sheets=['Murs', 'Sols', 'Poutres', 'Poteaux'])
 
-    print("\n✅ prediction done: ", y_pred, y_pred.shape, "\n")
-    pass #treturn the predicted values
+    #Preprocess the new loaded df
+    #clean_df_dict = proc(df_dict)
 
+
+    #load model(s) to make prediction - using a for loop tp 4 models prediction process
+
+    #target_model = tf.keras.models.load_model('/models/target_model.keras')
+
+    #predict results
+    '''
+    murs_pred = target_model1.predict(clean_df_dict['Murs'])
+    sols_pred = target_model2.predict(clean_df_dict['Sols'])
+    poutres_pred = target_model2.predict(clean_df_dict['Poutres'])
+    poteaux_pred = target_model2.predict(clean_df_dict['Poteaux'])
+
+    #merge results to main db_dict
+    murs_full= pd.concat(df_dict['Murs'], murs_pred)
+    sols_full= pd.concat(df_dict['Sols'], sols_pred)
+    poutres_full= pd.concat(df_dict['Poutres'], poutres_pred)
+    poteaux_full= pd.concat(df_dict['Poteaux'], poteaux_pred)
+
+    #remake an excel file from dfs
+
+    with pd.ExcelWriter('/data/output/predicted.xlsx') as writer:
+        murs_full.to_excel(writer, sheet_name='Murs')
+        sols_full.to_excel(writer, sheet_name='Sols')
+        sols_full.to_excel(writer, sheet_name='Poutres')
+        sols_full.to_excel(writer, sheet_name='Poteaux')
+
+    #return the url of the file to download
+
+    #print("\n✅ prediction done: ", y_pred, y_pred.shape, "\n")
+    '''
+    return  'prediction completed, you can download the predicted.xlsx'
 
 if __name__ == '__main__':
-    load_all_files()
+    #load_all_files()
     #import_excel_files()
     #preprocess()
     #train()
