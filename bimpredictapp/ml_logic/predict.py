@@ -1,4 +1,8 @@
 
+import pandas as pd
+import numpy as np
+
+from bimpredictapp.params import *
 
 
 
@@ -17,15 +21,36 @@ def predict_all_models(X_new):
     return predictions
 
 # Generate model predictions
-predictions = predict_all_models(X_new)
+# predictions = predict_all_models(X_new)
 
 # Run evaluation
-evaluation_results = evaluate_predictions(predictions, new_dataframes, detected_targets)
+# evaluation_results = evaluate_predictions(predictions, new_dataframes, detected_targets)
 
 # Print final model rankings based on accuracy
-print("\n🚀 Final Model Evaluation Rankings:")
-ranking_df = pd.DataFrame([
-    (df_name, model_name, acc) for df_name, models in evaluation_results.items() for model_name, acc in models.items()
-], columns=["Dataset", "Model", "Accuracy"]).sort_values(by="Accuracy", ascending=False)
+#print("\n🚀 Final Model Evaluation Rankings:")
 
-print(ranking_df.to_string(index=False))
+#rank models
+def rank_models(evaluation_results):
+    ranking_df = pd.DataFrame([
+        (df_name, model_name, acc) for df_name, models in evaluation_results.items() for model_name, acc in models.items()
+    ], columns=["Dataset", "Model", "Accuracy"]).sort_values(by="Accuracy", ascending=False)
+
+    print(ranking_df.to_string(index=False))
+
+#decode prediction
+def decode_predictions(predictions, target_encoders):
+    """Decodes encoded model predictions back to original text values."""
+    decoded_results = {}
+
+    for df_name, model_results in predictions.items():
+        decoded_results[df_name] = {}
+
+        # Decode ML model predictions
+        for model_name, encoded_preds in model_results["ML"].items():
+            decoded_results[df_name][model_name] = target_encoders[df_name].inverse_transform(encoded_preds)
+
+        # Decode Deep Learning model predictions
+        for model_name, encoded_preds in model_results["Deep Learning"].items():
+            decoded_results[df_name][model_name] = target_encoders[df_name].inverse_transform(encoded_preds)
+
+    return decoded_results
