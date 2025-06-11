@@ -15,8 +15,11 @@ from tensorflow import keras
 from os import listdir
 from os.path import isfile, join
 
-def load_all_files():
-    all_files = [f for f in listdir(EXCEL_FILES_PATH) if isfile(join(EXCEL_FILES_PATH, f))]
+def load_all_files(files_path)-> list:
+    '''
+    Call this function to get all filenames in a folder into one list, for training purpose.
+    '''
+    all_files = [f for f in listdir(files_path) if isfile(join(files_path, f))]
     return all_files
 
 def import_excel_files() -> None:
@@ -32,11 +35,8 @@ def import_excel_files() -> None:
 
 def preprocess() -> None:
     """
-    - Query the raw dataset from Le Wagon's BigQuery dataset
-    - Cache query result as a local CSV if it doesn't exist locally
-    - Process query data
-    - Store processed data on your personal BQ (truncate existing table if it exists)
-    - No need to cache processed data as CSV (it will be cached when queried back from BQ during training)
+    Prepares the data from each sheet and calls the required functions
+    before training or using the models in the predicting process.
     """
 
     print(Fore.MAGENTA + "\n ⭐️ Use case: preprocess" + Style.RESET_ALL)
@@ -52,11 +52,10 @@ def train(
     ) -> float:
 
     """
-    - Download processed data from your BQ table (or from cache if it exists)
-    - Train on the preprocessed dataset (which should be ordered by date)
-    - Store training results and model weights
-
-    Return val_mae as a float
+    Splitting the data into train/val/test
+    Trainging the models if rewuired, with the sheets.
+    Saves the model after training
+    moves the last model into stagin
     """
 
     print(Fore.MAGENTA + "\n⭐️ Use case: train" + Style.RESET_ALL)
@@ -64,8 +63,6 @@ def train(
 
     # Load processed data using `get_data_with_cache` in chronological order
     # Try it out manually on console.cloud.google.com first!
-
-    # Below, our columns are called ['_0', '_1'....'_66'] on BQ, student's column names may differ
 
     # Create (X_train_processed, y_train, X_val_processed, y_val)
 

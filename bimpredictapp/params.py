@@ -40,6 +40,10 @@ ESSENTIAL_COLUMNS = {
 ### ========================================
 ### Prefix mapping for different DataFrames
 ### ========================================
+
+### ========================================
+### Prefix mapping for different DataFrames
+### ========================================
 PREFIXES = {
     "Murs": "Mur_",
     "Sols": "Sol_",
@@ -48,6 +52,7 @@ PREFIXES = {
 }
 
 ##################  CONSTANTS  #####################
+
 
 ################## VALIDATIONS #################
 

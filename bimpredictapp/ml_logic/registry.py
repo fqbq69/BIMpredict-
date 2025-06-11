@@ -5,13 +5,12 @@ import pickle
 
 from colorama import Fore, Style
 from tensorflow import keras
-from google.cloud import storage
 
-import mlflow
-from mlflow.tracking import MlflowClient
+#import mlflow
+#from mlflow.tracking import MlflowClient
 
 #fix missing modules
-from bmipredictapp.params import *
+from bimpredictapp.params import *
 
 def save_results(params: dict, metrics: dict) -> None:
     """

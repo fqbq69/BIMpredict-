@@ -8,8 +8,8 @@ from tensorflow import keras
 from keras import Model, Sequential, layers, regularizers, optimizers
 from keras.callbacks import EarlyStopping
 
-end = time.perf_counter()
-print(f"\n✅ TensorFlow loaded ({round(end - start, 2)}s)")
+#end = time.perf_counter()
+#print(f"\n✅ TensorFlow loaded ({round(end - start, 2)}s)")
 
 
 #### THIS IS THE TAXIFARE MODELS - WE ARE GOING TO CREATE OUR OWN
