@@ -1,290 +1,230 @@
 import pandas as pd
 import numpy as np
 import os
+import re
 from bimpredictapp.params import *
 
 from IPython.display import display, HTML
 import missingno as msno
 import matplotlib.pyplot as plt
 
-def clean_ids_columns(df_dict) -> tuple:
-    """
-    Compact cleaning with side-by-side before/after comparison and final columns.
-    """
-    renamed_columns = {}
-    print("🛁 Starting ID columns cleaning...\n")
+def clean_columns(dataframes) -> pd.DataFrame:
+    required_columns = {
+        "Murs": ["Id", "011EC_Lot", "012EC_Ouvrage", "013EC_Localisation", "014EC_Mode Constructif", "Hauteur",
+                "Epaisseur", "AI", "AS", "Sols en intersection", "Sols coupés (u)", "Sols coupés (Ids)",
+                "Sols coupants (u)", "Sols coupants (Ids)", "Sol au-dessus", "Sol en-dessous", "Fenêtres", "Portes",
+                "Ouvertures", "Murs imbriqués", "Mur multicouche", "Mur empilé", "Profil modifié", "Extension inférieure",
+                "Extension supérieure", "Partie inférieure attachée", "Partie supérieure attachée", "Décalage supérieur",
+                "Décalage inférieur", "Matériau structurel"],
 
-    for sheet_name, df in df_dict.items():
-        if not isinstance(df, pd.DataFrame) or df.empty:
-            continue
+        "Sols": ["Id", "011EC_Lot", "012EC_Ouvrage", "013EC_Localisation", "014EC_Mode Constructif", "Murs en intersection",
+                "Murs coupés (u)", "Murs coupés (Ids)", "Murs coupants (u)", "Murs coupants (Ids)", "Poutres en intersection",
+                "Poutres coupés (u)", "Poutres coupés (Ids)", "Poutres coupants (u)", "Poutres coupants (Ids)",
+                "Poteaux en intersection", "Poteaux coupés (u)", "Poteaux coupés (Ids)", "Poteaux coupants (u)",
+                "Poteaux coupants (Ids)", "Ouvertures", "Sol multicouche", "Profil modifié", "Décalage par rapport au niveau",
+                "Epaisseur", "Lié au volume", "Etude de l'élévation à la base", "Etude de l'élévation en haut",
+                "Epaisseur du porteur", "Elévation au niveau du noyau inférieur", "Elévation au niveau du noyau supérieur",
+                "Elévation en haut", "Elévation à la base", "Matériau structurel"],
 
-        u_cols = [col for col in df.columns if ("coupés_u" in col or "coupants_u" in col)]
-        if not u_cols:
-            continue
+        "Poutres": ["Id", "011EC_Lot", "012EC_Ouvrage", "013EC_Localisation", "014EC_Mode Constructif", "AI", "AS",
+                    "Hauteur totale", "Hauteur", "Sols en intersection", "Sols coupés (u)", "Sols coupés (Ids)",
+                    "Sols coupants (u)", "Sols coupants (Ids)", "Sol au-dessus", "Sol en-dessous", "Poteaux en intersection",
+                    "Poteaux coupés (u)", "Poteaux coupés (Ids)", "Poteaux coupants (u)", "Poteaux coupants (Ids)",
+                    "Etat de la jonction", "Valeur de décalage Z", "Justification Z", "Valeur de décalage Y", "Justification Y",
+                    "Justification YZ", "Matériau structurel", "Elévation du niveau de référence", "Elévation en haut",
+                    "Rotation de la section", "Orientation", "Décalage du niveau d'arrivée", "Décalage du niveau de départ",
+                    "Elévation à la base", "Longueur de coupe", "Longueur", "hauteur_section", "largeur_section"],
 
-        print(f"📋 {sheet_name}:")
-
-        for u_col in u_cols:
-            ids_col = u_col.replace('_u', '_Ids')
-            if ids_col not in df.columns:
-                print(f" ⚠️ {u_col} → No matching IDs column")
-                continue
-
-            # Store original values
-            original_u = df[u_col].copy()
-            original_ids = df[ids_col].copy()
-
-            # Perform cleaning
-            df[u_col] = pd.to_numeric(df[u_col], errors='coerce').fillna(0).astype(int)
-            df[ids_col] = df[ids_col].astype(str).replace(
-                ['nan', 'na', 'none', '', ' '], np.nan
-            )
-            condition = (df[u_col] == 0) & (df[ids_col].isna())
-            df.loc[condition, ids_col] = "0"
-
-            # Display comparison
-            print(f"\n 🔄 Processing: {u_col} ↔ {ids_col}")
-            comparison = pd.DataFrame({
-                'Before_u': original_u.head(3),
-                'After_u': df[u_col].head(3),
-                'Before_ids': original_ids.head(3),
-                'After_ids': df[ids_col].head(3)
-            })
-            display(comparison)
-
-            # Rename column
-            new_name = f"{ids_col}_cleaned"
-            df.rename(columns={ids_col: new_name}, inplace=True)
-            renamed_columns[ids_col] = new_name
-            print(f" ✨ Renamed to: {new_name}")
-            print("─" * 50)
-
-    # Show final columns
-    print("\n✅ FINAL COLUMNS PER DATAFRAME:")
-    for sheet_name, df in df_dict.items():
-        if isinstance(df, pd.DataFrame) and not df.empty:
-            print(f"\n📌 {sheet_name} columns:")
-            cols = [f"{col} {'(renamed)' if col in renamed_columns.values() else ''}"
-                   for col in df.columns]
-            print("\n".join(f" • {col}" for col in cols))
-
-    return df_dict, renamed_columns
-
-def drop_zero_values_columns(df_dict) -> tuple:
-    """
-    Verifies missing values, drops columns with 100% missing values,
-    and shows only relevant columns for each DataFrame.
-
-    Args:
-        df_dict (dict): Dictionary containing DataFrames.
-
-    Returns:
-        Tuple: (updated_df_dict, results_dict, dropped_columns_report)
-    """
-    results_dict = {}
-    dropped_columns_report = {}
-    updated_df_dict = df_dict.copy()
-
-    # Define the prefix mapping for each DataFrame
-    prefix_mapping = {
-        "Murs": "Mur_",
-        "Sols": "Sol_",
-        "Poutres": "Poutre_",
-        "Poteaux": "Poteau_"
+        "Poteaux": ["Id", "011EC_Lot", "012EC_Ouvrage", "013EC_Localisation", "014EC_Mode Constructif", "AI", "AS",
+                    "Hauteur", "Longueur", "Partie inférieure attachée", "Partie supérieure attachée", "Sols en intersection",
+                    "Sols coupés (u)", "Sols coupés (Ids)", "Sols coupants (u)", "Sols coupants (Ids)", "Poutres en intersection",
+                    "Poutres coupés (u)", "Poutres coupés (Ids)", "Poutres coupants (u)", "Poutres coupants (Ids)",
+                    "Matériau structurel", "Décalage supérieur", "Décalage inférieur", "Diamètre poteau", "h", "b",
+                    "hauteur_section", "largeur_section"]
     }
 
-    for df_name, df in updated_df_dict.items():
-        print(f"\n{'='*50}")
-        print(f"🔍 ANALYZING: {df_name.upper()}")
-        print(f"{'='*50}")
+    # Filter multiple dataframes dynamically
+    cleaned_dataframes = {}  # Store cleaned versions
 
-        # Get the prefix for this DataFrame
-        prefix = prefix_mapping.get(df_name, "")
+    for df_name, df in dataframes.items():
+        print(f"\n🟢 Original shape of {df_name}: {df.shape}")
 
-        # Find all columns that start with this prefix
-        relevant_cols = [col for col in df.columns if col.startswith(prefix)]
-
-        if not relevant_cols:
-            print(f"⚠️ No relevant columns found for {df_name}")
-            continue
-
-        # Identify columns with 100% missing values
-        missing_percent = (df[relevant_cols].isna().mean() * 100)
-        cols_to_drop = missing_percent[missing_percent == 100].index.tolist()
-
-        # Drop columns with 100% missing values
-        if cols_to_drop:
-            df = df.drop(columns=cols_to_drop)
-            updated_df_dict[df_name] = df
-            dropped_columns_report[df_name] = cols_to_drop
-            print(f"\n❌ Dropped columns (100% missing):")
-            for col in cols_to_drop:
-                print(f" - {col}")
-            relevant_cols = [col for col in relevant_cols if col not in cols_to_drop]
-
-        # Create summary for remaining columns
-        summary_df = pd.DataFrame({
-            "Column": relevant_cols,
-            "Missing Count": df[relevant_cols].isna().sum(),
-            "Missing %": (df[relevant_cols].isna().mean() * 100).round(2)
-        })
-
-        results_dict[df_name] = summary_df
-
-        # Display summary
-        print(f"\n📊 Missing Value Summary for {df_name}:")
-        display(summary_df.style.format({"Missing %": "{:.2f}%"}).background_gradient(
-            subset=["Missing %"], cmap="Reds", vmin=0, vmax=100))
-
-        # Generate missingno plot for relevant columns only
-        if relevant_cols:  # Only plot if there are columns left
-            plt.figure(figsize=(10, 6))
-            msno.bar(df[relevant_cols], figsize=(10, 6), color="dodgerblue", fontsize=12)
-            plt.title(f"Missing Data Pattern - {df_name}", pad=20, fontsize=14)
-            plt.ylabel("Column", labelpad=15)
-            plt.xlabel("Data Completeness", labelpad=15)
-            plt.tight_layout()
-            plt.show()
+        # Automatically detect the correct category for filtering
+        for category, columns in required_columns.items():
+            if category.lower() in df_name.lower():  # Match dynamically
+                try:
+                    filtered_df = df[columns]  # Keep only the required columns
+                except KeyError as e:
+                    missing_columns = set(columns) - set(df.columns)
+                    print(f"⚠️ Missing columns in {df_name}: {missing_columns}. Skipping this dataframe.")
+                    continue
+                cleaned_dataframes[df_name] = filtered_df
+                print(f"✅ Shape after filtering {df_name}: {filtered_df.shape}")
+                break  # Stop looping once the correct match is found
         else:
-            print("⚠️ No columns remaining after dropping 100% missing columns")
+            print(f"⚠️ No matching category for {df_name}, skipping filtering.")
 
-    return updated_df_dict, results_dict, dropped_columns_report
+    # Add prefixes to column names based on the dataframe category and update index
+    for name, df in cleaned_dataframes.items():
+        if "murs" in name.lower():
+            prefix = "murs_"
+        elif "sols" in name.lower():
+            prefix = "sols_"
+        elif "poutres" in name.lower():
+            prefix = "poutres_"
+        elif "poteaux" in name.lower():
+            prefix = "poteaux_"
+        else:
+            prefix = ""
 
-def count_ids_per_row(df_dict) -> tuple:
-    """
-    Dynamically searches for columns ending with `_coupants_Ids_cleaned` or `_coupés_Ids_cleaned`
-    across multiple DataFrames, then counts comma-separated IDs.
+        # Rename columns with the prefix
+        df.rename(columns=lambda col: f"{prefix}{col}" if col.lower() != "id" else f"{prefix}id", inplace=True)
 
-    Args:
-        df_dict (dict): Dictionary of DataFrames (e.g., {"Murs": murs_df, "Sols": sols_df, ...})
+        # Drop the existing index and set the prefixed ID column as the new index
+        id_column = f"{prefix}id"
+        if id_column in df.columns:
+            df.set_index(id_column, inplace=True)
+            print(f"✅ Set '{id_column}' as index for {name}.")
+        else:
+            print(f"⚠️ '{id_column}' column not found in {name}, skipping index setting.")
 
-    Returns:
-        Updated DataFrames with count columns added and a mapping of processed columns.
-    """
-    renamed_columns = {}  # Track detected columns
+        # Update the cleaned_dataframes dictionary
+        cleaned_dataframes[name] = df
 
-    for df_name, df in df_dict.items():
-        print(f"\n🔍 Processing {df_name}...")
+    return cleaned_dataframes
 
-        # Find matching columns dynamically
-        matching_cols = [col for col in df.columns if col.endswith("_coupants_Ids_cleaned") or col.endswith("_coupés_Ids_cleaned")]
+########################################
+# MAPPING FEATURES
+########################################
 
-        for new_col in matching_cols:
-            renamed_columns[new_col] = new_col  # Store detected column
+#mapped_dataframes = map_feature_names(cleaned_dataframes, required_columns)
+def map_feature_names(cleaned_dataframes, required_columns) -> pd.DataFrame:
+    """Maps cleaned dataframe column names to match required training feature names."""
+    mapped_dataframes = {}
 
-            # Convert to string and clean empty/nan cases
-            df[new_col] = df[new_col].astype(str).replace(['nan', 'None', '0', '', ' '], np.nan)
+    for df_name, df in cleaned_dataframes.items():
+        for category, expected_columns in required_columns.items():
+            if category.lower() in df_name.lower():  # Match dynamically
+                # Create mapping: {cleaned_col_name: expected_col_name}
+                col_mapping = {cleaned_col: expected_col for cleaned_col in df.columns for expected_col in expected_columns if cleaned_col.lower() == expected_col.lower()}
 
-            # Count comma-separated IDs
-            df[f"{new_col}_count"] = df[new_col].apply(lambda x: len(str(x).split(",")) if pd.notna(x) else 0)
+                # Apply mapping to rename columns
+                df_mapped = df.rename(columns=col_mapping)
 
-            print(f"✅ Found & Processed: {new_col}, Added Count Column: {new_col}_count")
+                print(f"✅ Feature names mapped for {df_name}")
+                mapped_dataframes[df_name] = df_mapped
+                break  # Stop looping once category is matched
 
-    return df_dict, renamed_columns
+    return mapped_dataframes
 
-def verify_missing_values_with_missingno(df_dict):
-    """
-    Verifies missing values for relevant columns in each DataFrame using `missingno`.
-    Shows only the columns that belong to each specific DataFrame.
 
-    Args:
-        df_dict (dict): Dictionary containing DataFrames.
+########################################
+# CLEAN COLUMN NAMES
+########################################
 
-    Returns:
-        Dictionary with summary results for each DataFrame.
-    """
-    results_dict = {}
+def clean_column_names(df) -> pd.DataFrame:
+    # Ensure all column names are lowercase, replace spaces with underscores, and remove special characters
+    df.columns = (
+        df.columns
+        .str.lower()
+        .str.replace(r"\s+", "_", regex=True)
+        .str.replace(r"[^\w_]", "", regex=True)
+    )
+    return df
 
-    # Define the prefix mapping for each DataFrame
-    prefix_mapping = {
-        "Murs": "Mur_",
-        "Sols": "Sol_",
-        "Poutres": "Poutre_",
-        "Poteaux": "Poteau_"
-    }
+# Clean column names in all provided DataFrames
 
-    for df_name, df in df_dict.items():
-        print(f"\n{'='*50}")
-        print(f"🔍 ANALYZING: {df_name.upper()}")
-        print(f"{'='*50}")
+def clean_all_column_names(df):
 
-        # Get the prefix for this DataFrame
-        prefix = prefix_mapping.get(df_name, "")
+    cleaned_dataframes = {name: clean_column_names(df) for name, df in cleaned_dataframes.items()}
+    print("✅ Column names cleaned successfully across all cleaned dataframes!")
 
-        # Find all columns that start with this prefix
-        relevant_cols = [col for col in df.columns if col.startswith(prefix)]
+    TARGET_COLUMNS = ['011ec_lot', '012ec_ouvrage', '013ec_localisation', '014ec_mode_constructif']
+    final_cleaned_dataframes = {}
+    target_columns_found = set()
+    exception_keywords = ["coupés", "coupants", "011ec_lot", "012ec_ouvrage", "013ec_localisation", "014ec_mode_constructif"]
 
-        if not relevant_cols:
-            print(f"⚠️ No relevant columns found for {df_name}")
-            continue
+    for df_name, df in cleaned_dataframes.items():
+        print(f"\n🟢 Processing {df_name}...")
+        df = df.copy()
+        initial_shape = df.shape
+        print(f"📌 Initial shape: {initial_shape}")
 
-        # Create summary for only relevant columns
-        summary_df = pd.DataFrame({
-            "Column": relevant_cols,
-            "Missing Count": df[relevant_cols].isna().sum(),
-            "Missing %": (df[relevant_cols].isna().mean() * 100).round(2)
-        })
+        # Remove duplicate rows
+        duplicates = df.duplicated().sum()
+        if duplicates:
+            print(f"⚠️ Found {duplicates} duplicate rows. Removing...")
+            df.drop_duplicates(inplace=True)
+        else:
+            print("✅ No duplicate rows found.")
 
-        results_dict[df_name] = summary_df
+        # Drop columns that are 100% missing unless they match exception keywords
+        missing_cols = df.columns[df.isnull().mean() == 1]
+        cols_to_drop = [col for col in missing_cols if not any(keyword in col.lower() for keyword in exception_keywords)]
+        if cols_to_drop:
+            print(f"⚠️ Dropping {len(cols_to_drop)} completely empty columns: {cols_to_drop}")
+            df.drop(columns=cols_to_drop, inplace=True)
+        else:
+            print("✅ No fully missing columns detected (or all are exceptions).")
 
-        # Display summary
-        print(f"\n📊 Missing Value Summary for {df_name}:")
-        display(summary_df.style.format({"Missing %": "{:.2f}%"}))
+        mid_shape = df.shape
 
-        # Generate missingno plot for relevant columns only
-        plt.figure(figsize=(15, 7))
-        msno.bar(df[relevant_cols], figsize=(15, 7), color="dodgerblue", fontsize=12)
-        plt.title(f"Missing Data Pattern - {df_name}", pad=20, fontsize=14)
-        plt.ylabel("Column", labelpad=15)
-        plt.xlabel("Data Completeness", labelpad=15)
-        plt.tight_layout()
-        plt.show()
+        # Ensure each target column exists, adding it with NaNs if missing (with naming policy)
+        for target in TARGET_COLUMNS:
+            target_col = f"{df_name.split('_')[-1].lower()}_{target.lower()}"
+            if target_col not in df.columns:
+                print(f"⚠️ Target column '{target_col}' missing in '{df_name}'. Adding it.")
+                df[target_col] = float('nan')
 
-    return results_dict
+        final_shape = df.shape
+        if mid_shape != final_shape:
+            print(f"📊 Shape adjustment: before {mid_shape}, after {final_shape}")
 
-### ============================================================================
-### Function to sanitize column names by removing spaces and special characters
-### ============================================================================
-def sanitize_column_name(col_name):
-    """Remove spaces and special characters from column names."""
-    return col_name.strip().replace(" ", "_").replace("(", "").replace(")", "")
+        # List and accumulate target columns found in the current DataFrame
+        target_cols_in_df = [col for col in df.columns if any(t.lower() in col.lower() for t in TARGET_COLUMNS)]
+        print(f"🎯 Target columns in '{df_name}': {target_cols_in_df}")
+        target_columns_found.update(target_cols_in_df)
 
-### ============================================================================
-### Function to load and choose essential columns from columns in Excel sheets
-### ============================================================================
-def load_and_sanitize_data(filepath):
-    """
-    Load, clean, and sanitize all DataFrames from Excel file.
-    Returns dictionary of fully sanitized DataFrames.
-    """
-    dfs = {}
+        final_cleaned_dataframes[df_name] = df
+        print(f"📌 Final shape after cleaning: {final_shape}")
 
-    try:
-        print("📂 Loading and sanitizing Excel file...")
-        xls = pd.ExcelFile(filepath)
+    print(f"\nTarget columns detected across datasets: {target_columns_found}")
+    return final_cleaned_dataframes
 
-        for sheet, keep_cols in ESSENTIAL_COLUMNS.items():
-            if sheet in xls.sheet_names:
-                # Load original data
-                df = pd.read_excel(filepath, sheet_name=sheet)
+# Ensure missing values are filled in the processed datasets unless in TARGET_COLUMNS
+def check_missing_values(final_cleaned_dataframes) -> pd.DataFrame:
+    for df_name, df in final_cleaned_dataframes.items():
+        print(f"\n🟢 Filling missing values for {df_name}...")
 
-                # Clean and sanitize column names
-                sanitized_cols = {col: sanitize_column_name(col) for col in df.columns if col in keep_cols}
-                prefix = PREFIXES.get(sheet, "")
-                renamed_cols = {col: prefix + sanitized_cols[col] for col in sanitized_cols}
+        # Display shape before filling missing values
+        initial_shape = df.shape
+        print(f"📌 Initial shape before filling NaN: {initial_shape}")
 
-                # Create sanitized DataFrame
-                dfs[sheet] = df[list(sanitized_cols.keys())].rename(columns=renamed_cols)
+        # Fill missing values with 0 for non-target columns
+        non_target_columns = [col for col in df.columns if col not in TARGET_COLUMNS]
+        df[non_target_columns] = df[non_target_columns].fillna(0)
 
-                # Also sanitize the data values in ID columns
-                for col in dfs[sheet].columns:
-                    if col.endswith('_Id') or col.endswith('_Ids'):
-                        dfs[sheet][col] = dfs[sheet][col].astype(str).str.strip()
+        # Store updated dataframe back
+        final_cleaned_dataframes[df_name] = df
 
-                print(f"✅ {sheet}: Sanitized {len(renamed_cols)} columns")
+        # Display shape after processing
+        final_shape = df.shape
+        print(f"✅ Final shape after filling NaN: {final_shape}")
 
-    except Exception as e:
-        print(f"🚨 Error: {str(e)}")
-        return {sheet: pd.DataFrame() for sheet in ESSENTIAL_COLUMNS.keys()}
+    print("🚀 Missing values successfully handled across all datasets!")
 
-    return dfs
+    return final_cleaned_dataframes
+
+def identify_target(final_cleaned_dataframes) -> set:
+# Identify target columns dynamically across all DataFrames
+    target_columns_found = set()
+    for df_name, df in final_cleaned_dataframes.items():
+        found_targets = [
+            col for col in df.columns
+            if any(target.lower() in col.lower() for target in TARGET_COLUMNS)
+        ]
+        target_columns_found.update(found_targets)
+
+    print(f"\nTarget columns detected across datasets: {target_columns_found}")
+
+    return target_columns_found

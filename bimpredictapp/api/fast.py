@@ -5,6 +5,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from os.path import dirname, abspath, join
 from fastapi import UploadFile, File
 import shutil
+import random
+
 
 dirname = dirname(dirname(abspath(__file__)))
 
@@ -61,7 +63,10 @@ async def upload_excel(file: UploadFile = File(...)):
     """
     # Usage Example: curl -F "file=@/home/samer/code/test_file.xlsx " http://127.0.0.1:8004/upload_excel
 
-    save_path = join(dirname, 'data/raw', file.filename)
+    # Any uploaded file will be renamed: uploaded.xlsx
+
+    hash = random.getrandbits(32)
+    save_path = join(dirname, 'data/raw', f'uploaded{hash}.xlsx')
     with open(save_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
     return {"filename": file.filename, "status": "saved"}

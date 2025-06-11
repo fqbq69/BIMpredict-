@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 
 from bimpredictapp.params import *
+
 from bimpredictapp.ml_logic.load import load_excel
 from bimpredictapp.ml_logic.data import clean_ids_columns, drop_zero_values_columns
 from bimpredictapp.ml_logic.data import count_ids_per_row, verify_missing_values_with_missingno
@@ -15,29 +16,72 @@ from tensorflow import keras
 from os import listdir
 from os.path import isfile, join
 
-def load_all_files():
-    all_files = [f for f in listdir(EXCEL_FILES_PATH) if isfile(join(EXCEL_FILES_PATH, f))]
-    return all_files
 
-def import_excel_files() -> None:
+### ===============================================
+### PREPARING DIRECTORIES
+### ===============================================
+directories = [
+    RAW_DATA_DIR, PROCESSED_DATA_DIR, PREDICTED_DATA_DIR,
+    MODELS_DIR, ML_MODELS_DIR, DL_MODELS_DIR, OTHER_MODELS_DIR,
+    PYTHON_MODULES_DIR, PLOTS_DIR
+]
+
+# Checking directories and creating directories if they don't exist
+for directory in directories:
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+        print(f"Created directory: {directory}")
+    else:
+        print(f"Directory already exists: {directory}")
+
+
+### ===============================================
+### LOADING EXCEL FILE(S)
+### ===============================================
+
+    if MODE == 'train':
+        excel_files_list = RAW_DATA_DIR
+        print(RAW_DATA_DIR)
+    elif MODE == 'predict':
+        excel_files_list = PREDICTED_DATA_DIR
+    elif MODE == 'test':
+        excel_files_list = TESTING_DATA_DIR
+        print(TESTING_DATA_DIR)
+
+
+### ===============================================
+### LOADING EXCEL FILE(S)
+### ===============================================
+def list_excel_files(files_path)-> list:
+    '''
+    Call this function to get all filenames in a folder into one list, for training purpose.
+    '''
+    #old: all_files = [f for f in listdir(files_path) if isfile(join(files_path, f))]
+
+    excel_files = [f for f in os.listdir(files_path) if f.endswith(".xlsx") or f.endswith(".xls")]
+    return excel_files
+
+def load_excel_files(excel_files) -> None:
     """
-    Loading excel files from the directory defined in the env variables
+    Loading excel files from the directory defined in the env variables as a dataframe
 
     """
-    df_dict = load_excel(maquettes_path = A_FILE_TO_TEST, sheets=['Murs', 'Sols', 'Poutres', 'Poteaux'])
+    dataframes = load_excel(excel_files)
 
-    print("✅ Loading the maquette done \n")
+    print("✅ Loading the maquettes into dataframes is done \n")
 
-    pass
+    return dataframes
+
+### ===============================================
+### PREPROCESS THE DATA
+### ===============================================
 
 def preprocess() -> None:
     """
-    - Query the raw dataset from Le Wagon's BigQuery dataset
-    - Cache query result as a local CSV if it doesn't exist locally
-    - Process query data
-    - Store processed data on your personal BQ (truncate existing table if it exists)
-    - No need to cache processed data as CSV (it will be cached when queried back from BQ during training)
+    Prepares the data from each sheet and calls the required functions
+    before training or using the models in the predicting process.
     """
+
 
     print(Fore.MAGENTA + "\n ⭐️ Use case: preprocess" + Style.RESET_ALL)
 
@@ -52,11 +96,10 @@ def train(
     ) -> float:
 
     """
-    - Download processed data from your BQ table (or from cache if it exists)
-    - Train on the preprocessed dataset (which should be ordered by date)
-    - Store training results and model weights
-
-    Return val_mae as a float
+    Splitting the data into train/val/test
+    Trainging the models if rewuired, with the sheets.
+    Saves the model after training
+    moves the last model into stagin
     """
 
     print(Fore.MAGENTA + "\n⭐️ Use case: train" + Style.RESET_ALL)
@@ -64,8 +107,6 @@ def train(
 
     # Load processed data using `get_data_with_cache` in chronological order
     # Try it out manually on console.cloud.google.com first!
-
-    # Below, our columns are called ['_0', '_1'....'_66'] on BQ, student's column names may differ
 
     # Create (X_train_processed, y_train, X_val_processed, y_val)
 
@@ -95,6 +136,10 @@ def evaluate(stage: str = "Production"
 
     pass #returning eval values
 
+### ===============================================
+### LOADING AND PREDICTING
+### ===============================================
+
 def pred(file: str) -> str:
     """
     Make a prediction using the latest trained model
@@ -102,14 +147,12 @@ def pred(file: str) -> str:
 
     #print("\n⭐️ Use case: predict")
 
-    #load new sheets as dataframes
-    df_dict = load_excel(maquettes_path = A_FILE_TO_TEST, sheets=['Murs', 'Sols', 'Poutres', 'Poteaux'])
 
     #Preprocess the new loaded df
     #clean_df_dict = proc(df_dict)
 
-
     #load model(s) to make prediction - using a for loop tp 4 models prediction process
+    
 
     #target_model = tf.keras.models.load_model('/models/target_model.keras')
 
@@ -140,11 +183,11 @@ def pred(file: str) -> str:
     '''
     return  'prediction completed, you can download the predicted.xlsx'
 
+
 if __name__ == '__main__':
-    #load_all_files()
-    #import_excel_files()
+    excel_file = list_excel_files(excel_files_list)
+    load_excel_files(excel_file)
     #preprocess()
     #train()
     #evaluate()
     #pred()
-    pass
