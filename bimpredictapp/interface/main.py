@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 
 from bimpredictapp.params import *
+
 from bimpredictapp.ml_logic.load import load_excel
 from bimpredictapp.ml_logic.data import clean_ids_columns, drop_zero_values_columns
 from bimpredictapp.ml_logic.data import count_ids_per_row, verify_missing_values_with_missingno
@@ -14,6 +15,24 @@ from tensorflow import keras
 
 from os import listdir
 from os.path import isfile, join
+
+
+### ===============================================
+### PREPARING DIRECTORIES
+### ===============================================
+directories = [
+    RAW_DATA_DIR, PROCESSED_DATA_DIR, PREDICTED_DATA_DIR,
+    MODELS_DIR, ML_MODELS_DIR, DL_MODELS_DIR, OTHER_MODELS_DIR,
+    PYTHON_MODULES_DIR, PLOTS_DIR
+]
+
+# Checking directories and creating directories if they don't exist
+for directory in directories:
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+        print(f"Created directory: {directory}")
+    else:
+        print(f"Directory already exists: {directory}")
 
 def load_all_files(files_path)-> list:
     '''
@@ -27,7 +46,8 @@ def import_excel_files() -> None:
     Loading excel files from the directory defined in the env variables
 
     """
-    df_dict = load_excel(maquettes_path = A_FILE_TO_TEST, sheets=['Murs', 'Sols', 'Poutres', 'Poteaux'])
+    dataframes = load_excel()
+
 
     print("✅ Loading the maquette done \n")
 

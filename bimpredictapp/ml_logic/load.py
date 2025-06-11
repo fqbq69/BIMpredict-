@@ -7,10 +7,9 @@ from pathlib import Path
 import os
 import tensorflow as tf
 
+from params import *
 
-
-
-def load_excel(excel_file_path, sheets=['Murs', 'Sols', 'Poutres', 'Poteaux']) -> dict:
+def load_excel() -> dict:
     """
     Load data from an Excel file and return a dictionary of DataFrames.
 
@@ -21,23 +20,36 @@ def load_excel(excel_file_path, sheets=['Murs', 'Sols', 'Poutres', 'Poteaux']) -
     Returns:
     - dict: Dictionary with sheet names as keys and DataFrames as values.
     """
-    dfs = {}
 
-    for sheet in sheets:
+    # List all Excel files in RAW_DATA_DIR
+    excel_files = [f for f in os.listdir(RAW_DATA_DIR) if f.endswith(".xlsx") or f.endswith(".xls")]
+
+    # Dictionary to store DataFrames for each file and sheet
+    dataframes = {}
+
+    # Process each Excel file
+    for file in excel_files:
+        file_path = os.path.join(RAW_DATA_DIR, file)
+        print(f"Loading: {file_path}")
+
         try:
-            dfs[sheet] = pd.read_excel(excel_file_path, sheet_name=sheet)
-            print(f"{sheet} loaded successfully.")
+            # Load Excel file
+            excel_data = pd.ExcelFile(file_path)
+
+            # Load all sheets dynamically
+            for sheet_name in excel_data.sheet_names:
+                df = excel_data.parse(sheet_name)
+
+                # Save DataFrame with a unique identifier
+                dataframes[f"{file}_{sheet_name}"] = df
 
         except Exception as e:
-            print(f"Error loading data: {e}")
-            # Handle missing sheets
-            available_sheets = pd.ExcelFile(excel_file_path).sheet_names
-            print(f"Available sheets in this file: {available_sheets}")
-            for sheet in sheets:
-                if sheet in available_sheets:
-                    dfs[sheet] = pd.read_excel(excel_file_path, sheet_name=sheet)
-                else:
-                    print(f"Sheet '{sheet}' not found in the Excel file.")
-                    dfs[sheet] = pd.DataFrame()  # Empty DataFrame if sheet is missing
+            print(f"Error loading {file_path}: {e}")
 
-    return dfs
+    # Display summary of loaded data
+    print(f"\nTotal files processed: {len(dataframes)}")
+
+    for key, df in dataframes.items():
+        print(f"Loaded DataFrame: {key}, Shape: {df.shape}")
+
+    return dataframes
