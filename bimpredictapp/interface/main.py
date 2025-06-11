@@ -36,7 +36,7 @@ for directory in directories:
 
 
 ### ===============================================
-### LOADING EXCEL FILE(S)
+### MODE SELECTION
 ### ===============================================
 
     if MODE == 'train':
@@ -48,9 +48,8 @@ for directory in directories:
         excel_files_list = TESTING_DATA_DIR
         print(TESTING_DATA_DIR)
 
-
 ### ===============================================
-### LOADING EXCEL FILE(S)
+### Loading all excel file(s) in a directory
 ### ===============================================
 def list_excel_files(files_path)-> list:
     '''
@@ -60,6 +59,10 @@ def list_excel_files(files_path)-> list:
 
     excel_files = [f for f in os.listdir(files_path) if f.endswith(".xlsx") or f.endswith(".xls")]
     return excel_files
+
+### ===============================================
+### Convert Excel file(s) to dataframes
+### ===============================================
 
 def load_excel_files(excel_files) -> None:
     """
@@ -73,7 +76,7 @@ def load_excel_files(excel_files) -> None:
     return dataframes
 
 ### ===============================================
-### PREPROCESS THE DATA
+### Preprocess the data
 ### ===============================================
 
 def preprocess() -> None:
@@ -82,11 +85,14 @@ def preprocess() -> None:
     before training or using the models in the predicting process.
     """
 
-
     print(Fore.MAGENTA + "\n ⭐️ Use case: preprocess" + Style.RESET_ALL)
 
     print("✅ preprocess() done \n")
     pass
+
+### ===============================================
+### Train the model(s)
+### ===============================================
 
 def train(
         split_ratio: float = 0.02, # 0.02 represents ~ 1 month of validation data on a 2009-2015 train set
@@ -122,6 +128,10 @@ def train(
 
     pass #return the score here
 
+### ===============================================
+### Evaluate Models
+### ===============================================
+
 def evaluate(stage: str = "Production"
     ) -> float:
     """
@@ -137,7 +147,7 @@ def evaluate(stage: str = "Production"
     pass #returning eval values
 
 ### ===============================================
-### LOADING AND PREDICTING
+### Load and predict
 ### ===============================================
 
 def pred(file: str) -> str:
@@ -152,7 +162,7 @@ def pred(file: str) -> str:
     #clean_df_dict = proc(df_dict)
 
     #load model(s) to make prediction - using a for loop tp 4 models prediction process
-    
+
 
     #target_model = tf.keras.models.load_model('/models/target_model.keras')
 
