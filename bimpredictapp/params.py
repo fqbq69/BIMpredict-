@@ -6,6 +6,9 @@ EXCEL_FILES_PATH = "raw_data/excel"
 A_FILE_TO_TEST = 'raw_data/excel/RawData - 21003_Paramétrage ICF_18-01-22.xlsx'
 TF_CPP_MIN_LOG_LEVEL = 3
 
+# Pipeline mode: train, predict or test
+MODE = 'test'
+
 # Define project folder paths
 # Data directories
 BASE_DIR = "bimpredictapp/"
@@ -24,6 +27,18 @@ OTHER_MODELS_DIR = os.path.join(MODELS_DIR, "sk/other")
 # Python modules and plots directories
 PYTHON_MODULES_DIR = os.path.join(BASE_DIR, "python_modules")
 PLOTS_DIR = os.path.join(BASE_DIR, "plots")
+
+### ===============================================
+### Define Models Paths
+### ===============================================
+
+ML_MODELS_DIR = os.path.join(MODELS_DIR, "machine_learning")
+DL_MODELS_DIR = os.path.join(MODELS_DIR, "deep_learning")
+
+ENCODERS_PATH = os.path.join(MODELS_DIR, "feature_encoders.pkl")
+TARGET_ENCODERS_PATH = os.path.join(MODELS_DIR, "target_encoders.pkl")
+MODEL_FEATURES_PATH = os.path.join(MODELS_DIR, "model_features.pkl")
+
 
 ### ===============================================
 ### Define Features

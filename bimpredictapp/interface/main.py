@@ -34,30 +34,54 @@ for directory in directories:
     else:
         print(f"Directory already exists: {directory}")
 
-def load_all_files(files_path)-> list:
+
+### ===============================================
+### LOADING EXCEL FILE(S)
+### ===============================================
+
+    if MODE == 'train':
+        excel_files_list = RAW_DATA_DIR
+        print(RAW_DATA_DIR)
+    elif MODE == 'predict':
+        excel_files_list = PREDICTED_DATA_DIR
+    elif MODE == 'test':
+        excel_files_list = TESTING_DATA_DIR
+        print(TESTING_DATA_DIR)
+
+
+### ===============================================
+### LOADING EXCEL FILE(S)
+### ===============================================
+def list_excel_files(files_path)-> list:
     '''
     Call this function to get all filenames in a folder into one list, for training purpose.
     '''
-    all_files = [f for f in listdir(files_path) if isfile(join(files_path, f))]
-    return all_files
+    #old: all_files = [f for f in listdir(files_path) if isfile(join(files_path, f))]
 
-def import_excel_files() -> None:
+    excel_files = [f for f in os.listdir(files_path) if f.endswith(".xlsx") or f.endswith(".xls")]
+    return excel_files
+
+def load_excel_files(excel_files) -> None:
     """
-    Loading excel files from the directory defined in the env variables
+    Loading excel files from the directory defined in the env variables as a dataframe
 
     """
-    dataframes = load_excel()
+    dataframes = load_excel(excel_files)
 
+    print("✅ Loading the maquettes into dataframes is done \n")
 
-    print("✅ Loading the maquette done \n")
+    return dataframes
 
-    pass
+### ===============================================
+### PREPROCESS THE DATA
+### ===============================================
 
 def preprocess() -> None:
     """
     Prepares the data from each sheet and calls the required functions
     before training or using the models in the predicting process.
     """
+
 
     print(Fore.MAGENTA + "\n ⭐️ Use case: preprocess" + Style.RESET_ALL)
 
@@ -112,6 +136,10 @@ def evaluate(stage: str = "Production"
 
     pass #returning eval values
 
+### ===============================================
+### LOADING AND PREDICTING
+### ===============================================
+
 def pred(file: str) -> str:
     """
     Make a prediction using the latest trained model
@@ -119,14 +147,12 @@ def pred(file: str) -> str:
 
     #print("\n⭐️ Use case: predict")
 
-    #load new sheets as dataframes
-    df_dict = load_excel(maquettes_path = A_FILE_TO_TEST, sheets=['Murs', 'Sols', 'Poutres', 'Poteaux'])
 
     #Preprocess the new loaded df
     #clean_df_dict = proc(df_dict)
 
-
     #load model(s) to make prediction - using a for loop tp 4 models prediction process
+    
 
     #target_model = tf.keras.models.load_model('/models/target_model.keras')
 
@@ -157,11 +183,11 @@ def pred(file: str) -> str:
     '''
     return  'prediction completed, you can download the predicted.xlsx'
 
+
 if __name__ == '__main__':
-    #load_all_files()
-    #import_excel_files()
+    excel_file = list_excel_files(excel_files_list)
+    load_excel_files(excel_file)
     #preprocess()
     #train()
     #evaluate()
     #pred()
-    pass

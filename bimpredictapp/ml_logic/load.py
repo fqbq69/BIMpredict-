@@ -2,14 +2,11 @@
 import numpy as np
 import pandas as pd
 from colorama import Fore, Style
-
-from pathlib import Path
 import os
-import tensorflow as tf
 
-from params import *
+from bimpredictapp.params import *
 
-def load_excel() -> dict:
+def load_excel(excel_files) -> dict:
     """
     Load data from an Excel file and return a dictionary of DataFrames.
 
@@ -20,16 +17,12 @@ def load_excel() -> dict:
     Returns:
     - dict: Dictionary with sheet names as keys and DataFrames as values.
     """
-
-    # List all Excel files in RAW_DATA_DIR
-    excel_files = [f for f in os.listdir(RAW_DATA_DIR) if f.endswith(".xlsx") or f.endswith(".xls")]
-
     # Dictionary to store DataFrames for each file and sheet
     dataframes = {}
 
     # Process each Excel file
     for file in excel_files:
-        file_path = os.path.join(RAW_DATA_DIR, file)
+        file_path = os.path.join(TESTING_DATA_DIR, file)
         print(f"Loading: {file_path}")
 
         try:
