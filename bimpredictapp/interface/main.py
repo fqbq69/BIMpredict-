@@ -28,9 +28,6 @@ from bimpredictapp.python_modules.predict import predict_best_model
 from bimpredictapp.python_modules.data import clean_col,make_unique
 
 
-data_dir =  RAW_DATA_DIR ## Training data files
-test_file = TESTING_DATA_DIR # testing the prediction
-
 
 def load_excel_files(excel_folder,sheets) -> list: #returns a list of dicts
 
@@ -213,9 +210,12 @@ def evaluate(X_test: pd.DataFrame,
 
 ### Load and predict
 
-def load_prefit_model(model_pikle:str) -> Pipeline:
-    pipeline=pickle.load(open('Decision_Tree_optimized.pkl','rb'))
-    df = pd.read_csv('test.csv')
+def load_prefit_model(model_pikle) -> Pipeline:
+    print(model_pikle)
+
+    pipeline=pickle.load(open(model_pikle,'rb'))
+
+    print('pipeline pikle file is loaded..')
 
     return pipeline
 
@@ -264,7 +264,7 @@ def save_excel_file(pred_murs:pd.DataFrame,
     df3 = pred_poutres.copy()
     df4 = pred_poteaux.copy()
 
-    filename = 'output.xlsx'
+    filename = 'bimpredict/data/predicting_data/ouput.xlsx'
     #writing the dfs to sheets in one file
 
     with pd.ExcelWriter(filename) as writer:
@@ -279,32 +279,50 @@ def save_excel_file(pred_murs:pd.DataFrame,
     return f"The excel file {filename} has been saved successfuly."
 
 if __name__ == '__main__':
-    all_df = load_excel_files(data_dir, EXCEL_SHEETS)
-    sheet_concat = concat_features(all_df)
-    murs_concat = sheet_concat[0]
-    X, y_multi = preprocess(murs_concat)
-    pipeline, X_test, y_test = train(X, y_multi)
-    evaluate(X_test, y_test, pipeline)
 
-    #prediction starts in here
-    print("Let's predict new features...")
+    #testing files
+    data_dir =  RAW_DATA_DIR ## Training data files
+    test_file = TESTING_DATA_DIR # testing the prediction
+    model_pikle = MODEL_TEST_DIR
 
-    test_df = load_excel_files(test_file,EXCEL_SHEETS)
-    test_sheet_concat = concat_features(test_df)
+    if MODE == 'training':
+        all_df = load_excel_files(data_dir, EXCEL_SHEETS)
+        sheet_concat = concat_features(all_df)
+        murs_concat = sheet_concat[0]
+        X, y_multi = preprocess(murs_concat)
+        pipeline, X_test, y_test = train(X, y_multi)
+        evaluate(X_test, y_test, pipeline)
 
-    test_murs_concat = test_sheet_concat[0]
-    test_sols_concat = test_sheet_concat[1]
-    test_poutres_concat = test_sheet_concat[2]
-    test_poteaux_concat = test_sheet_concat[3]
+    elif MODE == 'predictng':
+        print("Let's predict new features...")
 
-    new_X1, new_y_multi1 = preprocess(test_murs_concat)
-    new_X2, new_y_multi2 = preprocess(test_sols_concat)
-    new_X3, new_y_multi3 = preprocess(test_poutres_concat)
-    new_X4, new_y_multi4 = preprocess(test_poteaux_concat)
+        #loading sheets as df and concating them
 
-    murs_pred1 = pred(new_X1, pipeline)
-    sols_pred2 = pred(new_X2, pipeline)
-    poutres_pred3 = pred(new_X3, pipeline)
-    poteaux_pred4 = pred(new_X4, pipeline)
+        test_df = load_excel_files(test_file,EXCEL_SHEETS)
+        test_sheet_concat = concat_features(test_df)
 
-    save_excel_file(murs_pred1,sols_pred2, poutres_pred3, poteaux_pred4)
+        test_murs_concat = test_sheet_concat[0]
+        test_sols_concat = test_sheet_concat[1]
+        test_poutres_concat = test_sheet_concat[2]
+        test_poteaux_concat = test_sheet_concat[3]
+
+        #preproc each sheet df
+        new_X1, new_y_multi1 = preprocess(test_murs_concat)
+        new_X2, new_y_multi2 = preprocess(test_sols_concat)
+        new_X3, new_y_multi3 = preprocess(test_poutres_concat)
+        new_X4, new_y_multi4 = preprocess(test_poteaux_concat)
+
+        #loading a model
+        pipeline = load_prefit_model(model_pikle)
+
+        #predicting target features
+        #murs_pred1 = pred(new_X1, pipeline)
+        #sols_pred2 = pred(new_X2, pipeline)
+        #poutres_pred3 = pred(new_X3, pipeline)
+        #poteaux_pred4 = pred(new_X4, pipeline)
+
+        #writing an excel file
+        #save_excel_file(murs_pred1,sols_pred2, poutres_pred3, poteaux_pred4)
+
+    else:
+        print('ERROR: mode shoud be declared as tringing or predicting in the param.py file')
