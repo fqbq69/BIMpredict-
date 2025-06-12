@@ -6,7 +6,7 @@ import os
 
 from bimpredictapp.params import *
 
-def load_excel(excel_files) -> dict:
+def load_excel_file(excel_files_path, sheets) -> dict: #dict of four features
     """
     Load data from an Excel file and return a dictionary of DataFrames.
 
@@ -17,32 +17,23 @@ def load_excel(excel_files) -> dict:
     Returns:
     - dict: Dictionary with sheet names as keys and DataFrames as values.
     """
-    # Dictionary to store DataFrames for each file and sheet
-    dataframes = {}
+    dfs = {}
 
-    # Process each Excel file
-    for file in excel_files:
-        file_path = os.path.join(TESTING_DATA_DIR, file)
-        print(f"Loading: {file_path}")
-
+    for sheet in sheets:
         try:
-            # Load Excel file
-            excel_data = pd.ExcelFile(file_path)
-
-            # Load all sheets dynamically
-            for sheet_name in excel_data.sheet_names:
-                df = excel_data.parse(sheet_name)
-
-                # Save DataFrame with a unique identifier
-                dataframes[f"{file}_{sheet_name}"] = df
+            dfs[sheet] = pd.read_excel(excel_files_path, sheet_name=sheet)
+            print(f"{sheet} loaded successfully.")
 
         except Exception as e:
-            print(f"Error loading {file_path}: {e}")
+            print(f"Error loading data: {e}")
+            # Handle missing sheets
+            available_sheets = pd.ExcelFile(excel_files_path).sheet_names
+            print(f"Available sheets in this file: {available_sheets}")
+            for sheet in sheets:
+                if sheet in available_sheets:
+                    dfs[sheet] = pd.read_excel(excel_files_path, sheet_name=sheet)
+                else:
+                    print(f"Sheet '{sheet}' not found in the Excel file.")
+                    dfs[sheet] = pd.DataFrame()  # Empty DataFrame if sheet is missing
 
-    # Display summary of loaded data
-    print(f"\nTotal files processed: {len(dataframes)}")
-
-    for key, df in dataframes.items():
-        print(f"Loaded DataFrame: {key}, Shape: {df.shape}")
-
-    return dataframes
+    return dfs
