@@ -213,17 +213,21 @@ def evaluate(X_test: pd.DataFrame,
 
 def load_prefit_model(model_pikle) -> Pipeline:
 
-    #saved_pipeline = joblib.dump(model_pikle, temp_model)
-    pipeline=pickle.load(open(model_pikle,'rb'))
+    #pipeline=pickle.load(open(model_pikle,'rb'))
+    pipeline=joblib.load(model_pikle)
 
     return pipeline
 
 
 def pred(df_test:pd.DataFrame,
-         pipeline: Pipeline) -> str:
+         pipeline: Pipeline) -> pd.DataFrame:
     """
     Make a prediction using the latest trained model
     """
+    
+    if isinstance(pipeline, list):
+        pipeline = pipeline[0]
+
 
     # Les targets à prédire (après nettoyage)
     targets = TARGET_FEATURES
@@ -236,6 +240,7 @@ def pred(df_test:pd.DataFrame,
         if col not in df_test.columns:
             df_test[col] = np.nan
             print(f"Colonne manquante ajoutée : {col}")
+
     X_test = df_test[features].copy()
 
     y_pred = pipeline.predict(X_test)
