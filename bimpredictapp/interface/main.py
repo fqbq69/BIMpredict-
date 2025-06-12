@@ -9,6 +9,7 @@ from os.path import isfile, join
 
 import tensorflow as tf
 from tensorflow import keras
+import pickle
 
 from sklearn.metrics import f1_score
 from sklearn.model_selection import train_test_split
@@ -30,17 +31,17 @@ from bimpredictapp.python_modules.data import clean_col,make_unique
 data_dir =  RAW_DATA_DIR ## Training data files
 test_file = TESTING_DATA_DIR # testing the prediction
 
-### Loading all excel file(s) in a directory
-def list_all_files(excel_folder) -> list:
-    all_files = [join(excel_folder, x) for x in listdir(excel_folder) if isfile(join(excel_folder, x))]
-    return all_files
 
-def load_all_excel_files(excel_files_path,sheets) -> list: #returns a list of dicts
+def load_excel_files(excel_folder,sheets) -> list: #returns a list of dicts
+
+    files = [join(excel_folder, x) for x in listdir(excel_folder) if isfile(join(excel_folder, x))]
+
     all_data_list = []
-    for file in excel_files_path:
+    for file in files:
         print(f"loading sheets from {file}.")
         df_dict = load_excel_file(file,sheets)
         all_data_list.append(df_dict)
+
     return all_data_list
 
 def concat_features(list_of_dict): #[{murs:mudrs_df, },{etc..}..]
@@ -158,7 +159,9 @@ def train( X: pd.DataFrame,
     ])
 
     # Split train/test
-    X_train, X_test, y_train, y_test = train_test_split(X, y_multi, test_size=0.2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y_multi,
+                                                        test_size=0.2,
+                                                        random_state=42)
 
     # Supprimer les lignes avec NaN dans les targets (train et test)
     train_notna = y_train.notna().all(axis=1)
@@ -207,13 +210,21 @@ def evaluate(X_test: pd.DataFrame,
 
     pass #returning eval values
 
+
 ### Load and predict
+
+def load_prefit_model(model_pikle:str) -> Pipeline:
+    pipeline=pickle.load(open('Decision_Tree_optimized.pkl','rb'))
+    df = pd.read_csv('test.csv')
+
+    return pipeline
+
+
 def pred(df_test:pd.DataFrame,
          pipeline: Pipeline) -> str:
     """
     Make a prediction using the latest trained model
     """
-
 
     # Les targets à prédire (après nettoyage)
     targets = TARGET_FEATURES
@@ -240,15 +251,35 @@ def pred(df_test:pd.DataFrame,
     # Afficher les premières lignes
     print(df_pred.head())
 
-    # Sauvegarder si besoin
-    df_pred.to_csv("resultats_predictions_murs6.csv", index=False)
+    return  df_pred
 
-    return  'prediction completed, you can download the predicted.xlsx'
+def save_excel_file(pred_murs:pd.DataFrame,
+                    pred_sols:pd.DataFrame,
+                    pred_poutres:pd.DataFrame,
+                    pred_poteaux:pd.DataFrame):
 
+    #making copies for each df
+    df1 = pred_murs.copy()
+    df2 = pred_sols.copy()
+    df3 = pred_poutres.copy()
+    df4 = pred_poteaux.copy()
+
+    filename = 'output.xlsx'
+    #writing the dfs to sheets in one file
+
+    with pd.ExcelWriter(filename) as writer:
+        df1.to_excel(writer, sheet_name='Murs')
+        df2.to_excel(writer, sheet_name='Sols')
+        df3.to_excel(writer, sheet_name='Poutres')
+        df4.to_excel(writer, sheet_name='Poteaux')
+
+    if not os.path.isfile(filename):
+        raise ValueError(f"Error saving {filename}!")
+
+    return f"The excel file {filename} has been saved successfuly."
 
 if __name__ == '__main__':
-    file_path = list_all_files(data_dir)
-    all_df = load_all_excel_files(file_path,EXCEL_SHEETS)
+    all_df = load_excel_files(data_dir, EXCEL_SHEETS)
     sheet_concat = concat_features(all_df)
     murs_concat = sheet_concat[0]
     X, y_multi = preprocess(murs_concat)
@@ -258,9 +289,22 @@ if __name__ == '__main__':
     #prediction starts in here
     print("Let's predict new features...")
 
-    test_file_path = list_all_files(test_file)
-    test_df = load_all_excel_files(test_file_path,EXCEL_SHEETS)
+    test_df = load_excel_files(test_file,EXCEL_SHEETS)
     test_sheet_concat = concat_features(test_df)
+
     test_murs_concat = test_sheet_concat[0]
-    new_X, new_y_multi = preprocess(test_murs_concat)
-    pred(new_X, pipeline)
+    test_sols_concat = test_sheet_concat[1]
+    test_poutres_concat = test_sheet_concat[2]
+    test_poteaux_concat = test_sheet_concat[3]
+
+    new_X1, new_y_multi1 = preprocess(test_murs_concat)
+    new_X2, new_y_multi2 = preprocess(test_sols_concat)
+    new_X3, new_y_multi3 = preprocess(test_poutres_concat)
+    new_X4, new_y_multi4 = preprocess(test_poteaux_concat)
+
+    murs_pred1 = pred(new_X1, pipeline)
+    sols_pred2 = pred(new_X2, pipeline)
+    poutres_pred3 = pred(new_X3, pipeline)
+    poteaux_pred4 = pred(new_X4, pipeline)
+
+    save_excel_file(murs_pred1,sols_pred2, poutres_pred3, poteaux_pred4)
