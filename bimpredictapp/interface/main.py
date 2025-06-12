@@ -211,11 +211,23 @@ def evaluate(X_test: pd.DataFrame,
 
 ### Load and predict
 
+def load_prefit_model(model_pikle) -> Pipeline:
+
+    #pipeline=pickle.load(open(model_pikle,'rb'))
+    pipeline=joblib.load(model_pikle)
+
+    return pipeline
+
+
 def pred(df_test:pd.DataFrame,
          pipeline: Pipeline) -> pd.DataFrame:
     """
     Make a prediction using the latest trained model
     """
+    
+    if isinstance(pipeline, list):
+        pipeline = pipeline[0]
+
 
     # Les targets à prédire (après nettoyage)
     targets = TARGET_FEATURES
