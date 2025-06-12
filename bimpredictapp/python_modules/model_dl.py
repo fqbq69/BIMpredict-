@@ -42,18 +42,6 @@ print(f"\n✅ Best Hyperparameters: {best_params}")
 # Train final model
 history = best_model.fit(X_train_combined, y_train, epochs=50, batch_size=best_params['batch_size'], validation_data=(X_test_combined, y_test))
 
-# Plot learning curve
-import matplotlib.pyplot as plt
-plt.plot(history.history['accuracy'], label='Training Accuracy', marker='o')
-plt.plot(history.history['val_accuracy'], label='Validation Accuracy', marker='o')
-plt.xlabel('Epochs')
-plt.ylabel('Accuracy')
-plt.title(f'Deep Learning Training Curve - {dataset_name}')
-plt.legend()
-plt.grid()
-plt.savefig('plots/deep_learning_tuned_learning_curve.png')
-plt.show()
-
 # Save best model
 best_model.model.save('models/deep_learning/best_model_tuned.keras')
 print("\n🚀 Deep Learning Model Training & Hyperparameter Tuning Completed!")

@@ -1,10 +1,44 @@
 
 import pandas as pd
 import numpy as np
+import joblib
 
 from bimpredictapp.params import *
+from bimpredictapp.python_modules.encoders import load_encoders, encode_new_data
 
 
+
+def make_ml_predictions(X_new):
+    """Loads and applies all machine learning models."""
+    feature_encoders, _ = load_encoders()
+    X_encoded = encode_new_data(X_new.copy(), feature_encoders)
+
+    if os.path.exists(MODEL_FEATURES_PATH):
+        model_features = joblib.load(MODEL_FEATURES_PATH)
+        X_encoded = X_encoded.reindex(columns=model_features, fill_value=0)
+
+    models = {f.replace("_optimized.pkl", "").replace("_combined.pkl", ""): joblib.load(os.path.join(ML_MODELS_DIR, f))
+              for f in os.listdir(ML_MODELS_DIR) if f.endswith(".pkl")}
+
+    predictions = {name: model.predict(X_encoded) for name, model in models.items()}
+    return max(predictions.items(), key=lambda x: np.mean(x[1]))  # Returns best ML prediction
+
+
+def make_dl_predictions(X_new):
+    """Loads and applies all deep learning models."""
+    models = {f.replace("_best_model.keras", "").replace("_tuned.keras", ""): tf.keras.models.load_model(os.path.join(DL_MODELS_DIR, f))
+              for f in os.listdir(DL_MODELS_DIR) if f.endswith(".keras")}
+
+    predictions = {name: np.argmax(model.predict(X_new), axis=1) for name, model in models.items()}
+    return max(predictions.items(), key=lambda x: np.mean(x[1]))
+
+
+def predict_best_model(X_new):
+    """Runs predictions across ML and DL models and picks the best one."""
+    best_ml = make_ml_predictions(X_new)
+    best_dl = make_dl_predictions(X_new)
+
+    return best_ml if np.mean(best_ml[1]) > np.mean(best_dl[1]) else best_dl
 
 def predict_all_models(X_new):
     """Runs predictions across ML and DL models and returns all results."""
