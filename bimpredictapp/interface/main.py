@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from colorama import Fore, Style
-from joblib import Parallel, delayed, dump
+import joblib
 
 import os
 from os import listdir
@@ -107,7 +107,6 @@ def preprocess(sheet_concat) -> tuple:
 
     return X, y_multi
 
-
 ### Train the model(s)
 def train( X: pd.DataFrame,
           y_multi:pd.DataFrame,
@@ -171,6 +170,8 @@ def train( X: pd.DataFrame,
 
     # Prédiction et score baseline
     #joblib.dump(pipeline, 'randomforestmurspipeline.pkl')
+    model_name = 'bimpredictapp/models/testing/trained_model.pkl'
+    pickle.dump(pipeline, open(model_name, 'wb'))
 
     #print("Pipeline complet sauvegardé dans bimpredict_pipeline.pkl")
 
@@ -211,11 +212,9 @@ def evaluate(X_test: pd.DataFrame,
 ### Load and predict
 
 def load_prefit_model(model_pikle) -> Pipeline:
-    print(model_pikle)
 
+    #saved_pipeline = joblib.dump(model_pikle, temp_model)
     pipeline=pickle.load(open(model_pikle,'rb'))
-
-    print('pipeline pikle file is loaded..')
 
     return pipeline
 
@@ -264,7 +263,7 @@ def save_excel_file(pred_murs:pd.DataFrame,
     df3 = pred_poutres.copy()
     df4 = pred_poteaux.copy()
 
-    filename = 'bimpredict/data/predicting_data/ouput.xlsx'
+    filename = 'bimpredictapp/data/predicting_data/ouput.xlsx'
     #writing the dfs to sheets in one file
 
     with pd.ExcelWriter(filename) as writer:
@@ -284,6 +283,7 @@ if __name__ == '__main__':
     data_dir =  RAW_DATA_DIR ## Training data files
     test_file = TESTING_DATA_DIR # testing the prediction
     model_pikle = MODEL_TEST_DIR
+    temp_model = ""
 
     if MODE == 'training':
         all_df = load_excel_files(data_dir, EXCEL_SHEETS)
@@ -293,7 +293,8 @@ if __name__ == '__main__':
         pipeline, X_test, y_test = train(X, y_multi)
         evaluate(X_test, y_test, pipeline)
 
-    elif MODE == 'predictng':
+
+    elif MODE == 'predicting':
         print("Let's predict new features...")
 
         #loading sheets as df and concating them
@@ -316,13 +317,13 @@ if __name__ == '__main__':
         pipeline = load_prefit_model(model_pikle)
 
         #predicting target features
-        #murs_pred1 = pred(new_X1, pipeline)
-        #sols_pred2 = pred(new_X2, pipeline)
-        #poutres_pred3 = pred(new_X3, pipeline)
-        #poteaux_pred4 = pred(new_X4, pipeline)
+        murs_pred = pred(new_X1, pipeline)
+        sols_pred = pred(new_X2, pipeline)
+        poutres_pred = pred(new_X3, pipeline)
+        poteaux_pred = pred(new_X4, pipeline)
 
         #writing an excel file
-        #save_excel_file(murs_pred1,sols_pred2, poutres_pred3, poteaux_pred4)
+        save_excel_file(murs_pred,sols_pred, poutres_pred, poteaux_pred)
 
     else:
         print('ERROR: mode shoud be declared as tringing or predicting in the param.py file')
