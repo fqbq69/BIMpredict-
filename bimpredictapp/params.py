@@ -6,7 +6,7 @@ EXCEL_FILES_PATH = "../../raw_data/excel"
 A_FILE_TO_TEST = '../../raw_data/excel/RawData - 21003_Paramétrage ICF_18-01-22.xlsx'
 TF_CPP_MIN_LOG_LEVEL = 3
 
-MODEL_TEST_DIR = "bimpredictapp/models/testing/trained_model.pkl"
+MODEL_TEST_DIR = "bimpredictapp/models/machine_learning/pipeline_randomforestpoteauxpipeline.pkl"
 
 #app mode : 'training' or 'predicting'
 MODE = 'predicting'

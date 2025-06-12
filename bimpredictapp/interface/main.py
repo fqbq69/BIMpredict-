@@ -213,14 +213,40 @@ def evaluate(X_test: pd.DataFrame,
 
 def load_prefit_model(model_pikle) -> Pipeline:
 
-    #saved_pipeline = joblib.dump(model_pikle, temp_model)
-    pipeline=pickle.load(open(model_pikle,'rb'))
+    #pipeline=pickle.load(open(model_pikle,'rb'))
+    pipeline=joblib.load(model_pikle)
 
     return pipeline
 
 
+def predict_from_df(df_test: pd.DataFrame) -> pd.DataFrame:
+    """
+    Loads a pre-trained model from MODEL_TEST_DIR and predicts y from df_test.
+    Returns a DataFrame with predictions.
+    """
+    # Load the pre-trained model
+    pipeline = load_prefit_model(MODEL_TEST_DIR)
+
+    # Ensure all expected features are present in df_test
+    features = pipeline.named_steps['preprocessor'].feature_names_in_
+    for col in features:
+        if col not in df_test.columns:
+            df_test[col] = np.nan
+
+    # Select only the features needed for prediction
+    X_test = df_test[features].copy()
+
+    # Predict using the loaded model
+    y_pred = pipeline.predict(X_test)
+
+    # Prepare DataFrame for output
+    y_pred_df = pd.DataFrame(y_pred, columns=TARGET_FEATURES)
+
+    return y_pred_df
+
+
 def pred(df_test:pd.DataFrame,
-         pipeline: Pipeline) -> str:
+         pipeline: Pipeline) -> pd.DataFrame:
     """
     Make a prediction using the latest trained model
     """
@@ -236,6 +262,7 @@ def pred(df_test:pd.DataFrame,
         if col not in df_test.columns:
             df_test[col] = np.nan
             print(f"Colonne manquante ajoutée : {col}")
+
     X_test = df_test[features].copy()
 
     y_pred = pipeline.predict(X_test)
