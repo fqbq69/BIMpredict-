@@ -334,6 +334,7 @@ if __name__ == '__main__':
     #testing files
     data_dir =  RAW_DATA_DIR ## Training data files
     test_file = TESTING_DATA_DIR # testing the prediction
+    model_pikle_all = MODEL_TEST_DIR_COMB
     model_pikle_murs = MODEL_TEST_DIR_MURS
     model_pikle_sols = MODEL_TEST_DIR_SOLS
 
@@ -366,17 +367,14 @@ if __name__ == '__main__':
         new_X3, new_y_multi3 = preprocess(test_poutres_concat)
         new_X4, new_y_multi4 = preprocess(test_poteaux_concat)
 
-        #loading a model
-        pipeline_murs = load_prefit_model(model_pikle_murs)
-        pipeline_sols = load_prefit_model(model_pikle_sols)
-
-
+        #loading pipeline(s)
+        pipeline = load_prefit_model(model_pikle_all)
 
         #predicting target features
-        murs_pred = pred(new_X1, pipeline_murs)
-        sols_pred = pred(new_X2, pipeline_sols)
-        poutres_pred = pred(new_X3, pipeline_murs)
-        poteaux_pred = pred(new_X4, pipeline_murs)
+        murs_pred = pred(new_X1, pipeline)
+        sols_pred = pred(new_X2, pipeline)
+        poutres_pred = pred(new_X3, pipeline)
+        poteaux_pred = pred(new_X4, pipeline)
 
 
         #merging with old file and writing a new excel file
