@@ -11,6 +11,7 @@ import tensorflow as tf
 from tensorflow import keras
 import pickle
 
+
 from sklearn.metrics import f1_score
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
@@ -87,10 +88,10 @@ def preprocess(sheet_concat) -> tuple:
     # Nettoyer les noms de colonnes et les rendre uniques
 
     sheet_concat.columns = [clean_col(c) for c in sheet_concat.columns]
-    print(sheet_concat.columns.tolist()[0:5])
+    #print(sheet_concat.columns.tolist()[0:5])
 
     sheet_concat.columns = make_unique([clean_col(c) for c in sheet_concat.columns])
-    print(sheet_concat.columns.tolist()[0:5])
+    #print(sheet_concat.columns.tolist()[0:5])
 
     # Déterminer les colonnes cibles effectivement présentes dans le DataFrame
     targets_in_df = [col for col in TARGET_FEATURES if col in sheet_concat.columns]
@@ -224,7 +225,7 @@ def pred(df_test:pd.DataFrame,
     """
     Make a prediction using the latest trained model
     """
-    
+
     if isinstance(pipeline, list):
         pipeline = pipeline[0]
 
@@ -257,25 +258,71 @@ def pred(df_test:pd.DataFrame,
 
     return  df_pred
 
+
 def save_excel_file(pred_murs:pd.DataFrame,
                     pred_sols:pd.DataFrame,
                     pred_poutres:pd.DataFrame,
-                    pred_poteaux:pd.DataFrame):
+                    pred_poteaux:pd.DataFrame,
+                    old_file_df:pd.DataFrame):
 
     #making copies for each df
-    df1 = pred_murs.copy()
-    df2 = pred_sols.copy()
-    df3 = pred_poutres.copy()
-    df4 = pred_poteaux.copy()
+    pred_murs_copy = pred_murs.copy()
+    pred_sols_copy = pred_sols.copy()
+    pred_poutres_copy = pred_poutres.copy()
+    pred_poteaux_copy = pred_poteaux.copy()
 
-    filename = 'bimpredictapp/data/predicting_data/ouput.xlsx'
+    input_filename = 'output.xlsx'
+    filename = f'bimpredictapp/data/predicting_data/{input_filename}'
+
     #writing the dfs to sheets in one file
 
+    if isinstance(old_file_df, list):
+        old_file_df = old_file_df[0]
+
+    columns_to_drop = ['011EC_Lot', '012EC_Ouvrage', '013EC_Localisation','014EC_Mode Constructif']
+
+    old_murs_df = old_file_df['Murs']
+    old_murs_df.drop(columns_to_drop, axis=1, inplace=True)
+
+    old_sols_df = old_file_df['Sols']
+    old_sols_df.drop(columns_to_drop, axis=1, inplace=True)
+
+    old_poutres_df = old_file_df['Poutres']
+    old_poutres_df.drop(columns_to_drop, axis=1, inplace=True)
+
+    old_poteaux_df = old_file_df['Poteaux']
+    old_poteaux_df.drop(columns_to_drop, axis=1, inplace=True)
+
+    def merge_with_id(pred_df, input_df):
+        if 'Id' not in input_df.columns:
+            raise ValueError("Colonne 'Id' absente du fichier d'entrée.")
+        if len(pred_df) != len(input_df):
+            raise ValueError("Les DataFrames prédiction et entrée n'ont pas la même taille.")
+        df = pred_df.copy()
+        df.insert(0, 'Id', input_df['Id'].values)
+        return df
+
+    #remove old empty columns
+
+    #merging pred with old
+    pred_murs_copy_id = merge_with_id(pred_murs_copy,old_murs_df)
+    final_df_murs = pd.merge(pred_murs_copy_id, old_murs_df, on='Id', how="outer")
+
+    pred_sols_copy_id = merge_with_id(pred_sols_copy, old_sols_df)
+    final_df_sols = pd.merge(pred_sols_copy_id, old_sols_df, on='Id', how="outer")
+
+    pred_poutres_copy_id = merge_with_id(pred_poutres_copy, old_poutres_df)
+    final_df_poutres = pd.merge(pred_poutres_copy_id, old_poutres_df, on='Id', how="outer")
+
+    pred_poteaux_copy_id = merge_with_id(pred_poteaux_copy, old_poteaux_df)
+    final_df_poteaux = pd.merge(pred_poteaux_copy_id, old_poteaux_df, on='Id', how="outer")
+
+
     with pd.ExcelWriter(filename) as writer:
-        df1.to_excel(writer, sheet_name='Murs')
-        df2.to_excel(writer, sheet_name='Sols')
-        df3.to_excel(writer, sheet_name='Poutres')
-        df4.to_excel(writer, sheet_name='Poteaux')
+        final_df_murs.to_excel(writer, sheet_name='Murs')
+        final_df_sols.to_excel(writer, sheet_name='Sols')
+        final_df_poutres.to_excel(writer, sheet_name='Poutres')
+        final_df_poteaux.to_excel(writer, sheet_name='Poteaux')
 
     if not os.path.isfile(filename):
         raise ValueError(f"Error saving {filename}!")
@@ -287,8 +334,9 @@ if __name__ == '__main__':
     #testing files
     data_dir =  RAW_DATA_DIR ## Training data files
     test_file = TESTING_DATA_DIR # testing the prediction
-    model_pikle = MODEL_TEST_DIR
-    temp_model = ""
+    model_pikle_murs = MODEL_TEST_DIR_MURS
+    model_pikle_sols = MODEL_TEST_DIR_SOLS
+
 
     if MODE == 'training':
         all_df = load_excel_files(data_dir, EXCEL_SHEETS)
@@ -319,16 +367,20 @@ if __name__ == '__main__':
         new_X4, new_y_multi4 = preprocess(test_poteaux_concat)
 
         #loading a model
-        pipeline = load_prefit_model(model_pikle)
+        pipeline_murs = load_prefit_model(model_pikle_murs)
+        pipeline_sols = load_prefit_model(model_pikle_sols)
+
+
 
         #predicting target features
-        murs_pred = pred(new_X1, pipeline)
-        sols_pred = pred(new_X2, pipeline)
-        poutres_pred = pred(new_X3, pipeline)
-        poteaux_pred = pred(new_X4, pipeline)
+        murs_pred = pred(new_X1, pipeline_murs)
+        sols_pred = pred(new_X2, pipeline_sols)
+        poutres_pred = pred(new_X3, pipeline_murs)
+        poteaux_pred = pred(new_X4, pipeline_murs)
 
-        #writing an excel file
-        save_excel_file(murs_pred,sols_pred, poutres_pred, poteaux_pred)
+
+        #merging with old file and writing a new excel file
+        save_excel_file(murs_pred,sols_pred, poutres_pred, poteaux_pred, test_df)
 
     else:
         print('ERROR: mode shoud be declared as tringing or predicting in the param.py file')
