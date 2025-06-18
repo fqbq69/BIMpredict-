@@ -7,8 +7,12 @@ A_FILE_TO_TEST = '../../raw_data/excel/RawData - 21003_Paramétrage ICF_18-01-2
 TF_CPP_MIN_LOG_LEVEL = 3
 
 MODEL_TEST_DIR_COMB = "bimpredictapp/models/pipelines/pipelines_combined.pkl"
-MODEL_TEST_DIR_MURS = "bimpredictapp/models/machine_learning/pipeline_randomforestpoteauxpipeline.pkl"
-MODEL_TEST_DIR_SOLS = "bimpredictapp/models/machine_learning/pipeline_randomforestpoteauxpipeline.pkl"
+MODEL_TEST_DIR_MURS = "bimpredictapp/models/machine_learning/trained_pipeline_murs.pkl"
+MODEL_TEST_DIR_SOLS = "bimpredictapp/models/machine_learning/trained_pipeline_sols.pkl"
+MODEL_TEST_DIR_POUTRES = "bimpredictapp/models/machine_learning/trained_pipeline_poutres.pkl"
+MODEL_TEST_DIR_POTREAUX = "bimpredictapp/models/machine_learning/trained_pipeline_potreaux.pkl"
+
+
 #app mode : 'training' or 'predicting'
 MODE = 'predicting'
 

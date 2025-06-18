@@ -111,10 +111,8 @@ def preprocess(sheet_concat) -> tuple:
 ### Train the model(s)
 def train( X: pd.DataFrame,
           y_multi:pd.DataFrame,
-        split_ratio: float = 0.02, # 0.02 represents ~ 1 month of validation data on a 2009-2015 train set
-        learning_rate=0.0005,
-        batch_size = 256,
-        patience = 2
+        pipleline_name:str,
+        n_estimators = 5000,
     ) -> Pipeline:
 
     """
@@ -152,7 +150,7 @@ def train( X: pd.DataFrame,
     # Pipeline complet avec MultiOutputClassifier
     pipeline = Pipeline([
         ('preprocessor', preprocessor),
-        ('model', MultiOutputClassifier(RandomForestClassifier(n_estimators=5000, random_state=42, verbose=1)))
+        ('model', MultiOutputClassifier(RandomForestClassifier(n_estimators=n_estimators, random_state=42, verbose=1)))
     ])
 
     # Split train/test
@@ -171,7 +169,7 @@ def train( X: pd.DataFrame,
 
     # Prédiction et score baseline
     #joblib.dump(pipeline, 'randomforestmurspipeline.pkl')
-    model_name = 'bimpredictapp/models/testing/trained_model.pkl'
+    model_name = f'bimpredictapp/models/testing/trained_{pipleline_name}.pkl'
     pickle.dump(pipeline, open(model_name, 'wb'))
 
     #print("Pipeline complet sauvegardé dans bimpredict_pipeline.pkl")
@@ -342,10 +340,27 @@ if __name__ == '__main__':
     if MODE == 'training':
         all_df = load_excel_files(data_dir, EXCEL_SHEETS)
         sheet_concat = concat_features(all_df)
+
         murs_concat = sheet_concat[0]
-        X, y_multi = preprocess(murs_concat)
-        pipeline, X_test, y_test = train(X, y_multi)
-        evaluate(X_test, y_test, pipeline)
+        sols_concat = sheet_concat[1]
+        poutres_concat = sheet_concat[2]
+        poteaux_concat = sheet_concat[3]
+
+        X_murs, y_murs_multi = preprocess(murs_concat)
+        X_sols, y_sols_multi = preprocess(sols_concat)
+        X_poutres, y_poutres_multi = preprocess(poutres_concat)
+        X_poteaux, y_poteaux_multi = preprocess(poteaux_concat)
+
+        pipeline_murs, X_murs_test, y_murs_test = train(X_murs, y_murs_multi,'pipleline_murs', n_estimators = 1500)
+        pipeline_sols, X_sols_test, y_sols_test = train(X_sols, y_sols_multi,'pipleline_sols', n_estimators = 1500)
+        pipeline_poutres, X_poutres_test, y_poutres_test = train(X_poutres, y_poutres_multi, 'pipeline_poutres', n_estimators = 1500)
+        pipeline_potreaux, X_poteaux_test, y_poteaux_test = train(X_poteaux, y_poteaux_multi,'pipeline_potreaux', n_estimators = 1500)
+
+        evaluate(X_murs_test, y_murs_test, pipeline_murs)
+        evaluate(X_sols_test, y_sols_test, pipeline_sols)
+        evaluate(X_poutres_test, y_poutres_test, pipeline_poutres)
+        evaluate(X_poteaux_test, y_poteaux_test, pipeline_potreaux)
+
 
 
     elif MODE == 'predicting':
